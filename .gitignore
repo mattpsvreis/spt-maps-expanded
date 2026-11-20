@@ -456,3 +456,6 @@ $RECYCLE.BIN/
 
 # auto generated files specific to this project
 Version.cs
+
+# Runtime caches written by the plugin (quest zone positions, etc.)
+Plugin/Cache/

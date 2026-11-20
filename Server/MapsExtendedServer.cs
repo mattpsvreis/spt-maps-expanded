@@ -34,14 +34,14 @@ public class MapsExtendedServer(
     CustomStaticRouter customStaticRouter)
     : IOnLoad
 {
-    private ModConfig? _modConfig;
+    private ServerMapPolicy? _mapPolicy;
     
     public Task OnLoadAsync(CancellationToken cancellationToken)
     { 
         var pathToMod = modHelper.GetAbsolutePathToModFolder(Assembly.GetExecutingAssembly());
-        _modConfig = modHelper.GetJsonDataFromFile<ModConfig>(pathToMod, "config.json");
+        _mapPolicy = modHelper.GetJsonDataFromFile<ServerMapPolicy>(pathToMod, "config.json");
         
-        customStaticRouter.PassConfig(_modConfig);
+        customStaticRouter.PassConfig(_mapPolicy);
         
         CreateNewMaps();
         return Task.CompletedTask;
@@ -298,7 +298,11 @@ public class MapsExtendedServer(
     }
 }
 
-public class ModConfig
+/// <summary>
+/// Server-driven policy for which player/bot marker categories are allowed in raid.
+/// Serialized to clients via /mapsextended/load (JSON property names must stay stable).
+/// </summary>
+public class ServerMapPolicy
 {
     public bool AllowShowFriendlyPlayerMarkersInRaid { get; set; }
     public bool AllowShowEnemyPlayerMarkersInRaid { get; set; }

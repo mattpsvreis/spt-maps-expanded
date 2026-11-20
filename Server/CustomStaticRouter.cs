@@ -10,7 +10,7 @@ namespace MapsExtended;
 [Injectable]
 public class CustomStaticRouter : StaticRouter
 {
-    private static ModConfig? _modConfig;
+    private static ServerMapPolicy? _mapPolicy;
 
     public CustomStaticRouter(
         JsonUtil jsonUtil) : base(
@@ -19,9 +19,9 @@ public class CustomStaticRouter : StaticRouter
     )
     {}
 
-    public void PassConfig(ModConfig config)
+    public void PassConfig(ServerMapPolicy config)
     {
-        _modConfig = config;
+        _mapPolicy = config;
     }
 
     private static List<RouteAction> GetCustomRoutes()
@@ -43,6 +43,6 @@ public class CustomStaticRouter : StaticRouter
 
     private static ValueTask<string> HandleRoute(string url, EmptyRequestData info, MongoId sessionId)
     {
-        return new ValueTask<string>(JsonSerializer.Serialize(_modConfig));
+        return new ValueTask<string>(JsonSerializer.Serialize(_mapPolicy));
     }
 }

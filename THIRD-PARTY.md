@@ -17,9 +17,8 @@ See `NOTICE` for full copyright lines. Short provenance:
 
 | Upstream | Role in Maps Extended |
 |---|---|
-| [SPT-DynamicMaps](https://github.com/acidphantasm/SPT-DynamicMaps) | Core map UI / markers / server map items |
-| [DynamicMaps Extended](https://github.com/black-hawk95/DynamicMaps-Extended) | Faction colours, variant/classic alias concepts, packaged map data |
-| DynamicMaps Plus | Integration work and Addons/Extended pack layout folded into this standalone build |
+| [SPT-DynamicMaps](https://github.com/acidphantasm/SPT-DynamicMaps) | Core map UI idea / markers idea / server item restrictions idea |
+| [DynamicMaps Extended](https://github.com/black-hawk95/DynamicMaps-Extended) | Faction colours, Map Variants support, packaged custom map data |
 
 Those projects’ own docs state that **third-party artwork is not MIT**. Maps Extended keeps that separation.
 
@@ -55,7 +54,7 @@ create new redistribution rights beyond what upstream projects already asserted.
 
 ---
 
-## Factory Classic map layers
+## Classic Maps ports by LennoxP90 map layers
 
 Sourced via upstream Extended packaging from older DynamicMaps MIT-licensed map data.
 Retains original attribution; not independently relicensed by Maps Extended.

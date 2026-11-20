@@ -4,10 +4,10 @@ using BepInEx.Logging;
 using Comfort.Common;
 using DrakiaXYZ.VersionChecker;
 using MapsExtended.Config;
-using MapsExtended.Features;
-using MapsExtended.Patches;
-using MapsExtended.UI;
-using MapsExtended.Utils;
+using MapsExtended.Integration;
+using MapsExtended.Hooks;
+using MapsExtended.Presentation;
+using MapsExtended.Core;
 using EFT;
 using EFT.UI;
 using EFT.UI.Map;
@@ -52,15 +52,15 @@ namespace MapsExtended
             }
         }
 
-        public ModdedMapScreen Map;
+        public RaidMapHost Map;
         private bool _disabledForHeadless;
 
         internal void Awake()
         {
             Instance = this;
-            ExternalModSupport.ModDetection.CheckforMods();
+            Integration.Mods.ModDetection.CheckforMods();
 
-            if (ExternalModSupport.ModDetection.FikaHeadlessLoaded)
+            if (Integration.Mods.ModDetection.FikaHeadlessLoaded)
             {
                 _disabledForHeadless = true;
                 Logger.LogInfo($"{Name}: Fika Headless detected — client/UI features disabled.");
@@ -122,7 +122,7 @@ namespace MapsExtended
             if (Map is not null) return;
 
             Log.LogInfo("Trying to attach to MapScreen");
-            Map = ModdedMapScreen.Create(Singleton<CommonUI>.Instance.gameObject);
+            Map = RaidMapHost.Create(Singleton<CommonUI>.Instance.gameObject);
             Map.transform.SetParent(mapScreen.transform);
         }
 

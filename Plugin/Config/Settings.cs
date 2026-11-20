@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using BepInEx.Configuration;
-using MapsExtended.ExternalModSupport;
-using MapsExtended.Utils;
+using MapsExtended.Integration.Mods;
+using MapsExtended.Core;
+using MapsExtended.Integration;
+using MapsExtended.Presentation;
 using UnityEngine;
 
 // THIS IS HEAVILY BASED ON DRAKIAXYZ'S SPT-QuickMoveToContainer
@@ -36,9 +38,9 @@ namespace MapsExtended.Config
 
         #endregion
         
-        #region Dynamic Markers
+        #region Markers
 
-        private const string DynamicMarkerTitle = "2. Dynamic Markers";
+        private const string DynamicMarkerTitle = "2. Markers";
         public static ConfigEntry<string> MarkerPack;
         public static ConfigEntry<bool> ShowPlayerMarker;
         public static ConfigEntry<bool> ShowFriendlyPlayerMarkersInRaid;
@@ -286,7 +288,7 @@ namespace MapsExtended.Config
 
             #endregion
 
-            #region Dynamic Markers
+            #region Markers
 
             var addonsPath = Path.Combine(Plugin.Path, "Addons");
             var markerPacks = new List<string> { "Default" };
@@ -382,10 +384,10 @@ namespace MapsExtended.Config
 
             ConfigEntries.Add(ShowQuestsInRaid = config.Bind(
                 DynamicMarkerTitle,
-                "Show Quests In Raid",
+                "Show Quests",
                 true,
                 new ConfigDescription(
-                    "If quests should be shown in raid",
+                    "Show quest markers in raid and out of raid. Out-of-raid markers use zone positions cached the first time you visit each map in a raid.",
                     null,
                     new ConfigurationManagerAttributes())));
 

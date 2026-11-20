@@ -1,0 +1,189 @@
+using System.Collections.Generic;
+using System.Linq;
+using Comfort.Common;
+using MapsExtended.Config;
+using MapsExtended.Core;
+using MapsExtended.Hooks;
+using MapsExtended.Presentation.Overlays;
+using MapsExtended.Integration;
+using MapsExtended.Presentation;
+using EFT;
+using EFT.Interactive;
+using EFT.UI.DragAndDrop;
+using UnityEngine;
+
+namespace MapsExtended.Markers
+{
+    public class BackpackMarkerProvider : MarkerProviderBase
+    {
+        // TODO: move to config
+        private const string BackpackCategory = "Backpack";
+        private const string BackpackImagePath = "Markers/backpack.png";
+        private static readonly Vector2 BackpackSize = new Vector2(30f, 30f);
+        //
+
+        private MapView _lastMapView;
+        private readonly Dictionary<int, MapMarker> _backpackMarkers = new();
+
+        public override void OnShowInRaid(MapView map)
+        {
+            _lastMapView = map;
+
+            RemoveStaleMarkers();
+            AddThrownBackpacks();
+
+            // register for if an item is registered
+            LootItemInitPatch.OnRegisterLoot += OnRegisterLoot;
+
+            // register for if item is destroyed (probably picked up)
+            GameWorldDestroyLootPatch.OnDestroyLoot += OnDestroyLoot;
+        }
+
+        public override void OnHideInRaid(MapView map)
+        {
+            LootItemInitPatch.OnRegisterLoot -= OnRegisterLoot;
+            GameWorldDestroyLootPatch.OnDestroyLoot -= OnDestroyLoot;
+        }
+
+        public override void OnMapChanged(MapView map, MapDef mapDef)
+        {
+            _lastMapView = map;
+            var gameWorld = Singleton<GameWorld>.Instance;
+
+            foreach (var itemNetId in _backpackMarkers.Keys.ToList())
+            {
+                TryRemoveMarker(itemNetId);
+
+                // check if item exists as loot item in the world
+                if (!gameWorld.LootItems.ContainsKey(itemNetId))
+                {
+                    continue;
+                }
+
+                TryAddMarker(map, gameWorld.LootItems.GetByKey(itemNetId));
+            }
+        }
+
+        public override void OnRaidEnd(MapView map)
+        {
+            LootItemInitPatch.OnRegisterLoot -= OnRegisterLoot;
+            GameWorldDestroyLootPatch.OnDestroyLoot -= OnDestroyLoot;
+            TryRemoveMarkers();
+        }
+
+        public override void OnDisable(MapView map)
+        {
+            LootItemInitPatch.OnRegisterLoot -= OnRegisterLoot;
+            GameWorldDestroyLootPatch.OnDestroyLoot -= OnDestroyLoot;
+            TryRemoveMarkers();
+        }
+
+        private void AddThrownBackpacks()
+        {
+            var gameWorld = Singleton<GameWorld>.Instance;
+            foreach (var pair in PlayerInventoryThrowItemPatch.ThrownItems)
+            {
+                var itemNetId = pair.Key;
+                var item = pair.Value;
+                var itemType = ItemViewFactory.GetItemType(item.GetType());
+
+                // check if item is already in markers or is not a backpack and doesn't not exist as loot item in the world
+                if (_backpackMarkers.ContainsKey(itemNetId)
+                    || itemType != EItemType.Backpack
+                    || !gameWorld.LootItems.ContainsKey(itemNetId))
+                {
+                    continue;
+                }
+
+                TryAddMarker(_lastMapView, gameWorld.LootItems.GetByKey(itemNetId));
+            }
+        }
+
+        private void OnRegisterLoot(LootItem lootItem)
+        {
+            if (lootItem is null || lootItem.Item is null)
+            {
+                return;
+            }
+
+            var itemNetId = lootItem.GetNetId();
+            var itemType = ItemViewFactory.GetItemType(lootItem.Item.GetType());
+
+            if (_backpackMarkers.ContainsKey(itemNetId)
+                || itemType != EItemType.Backpack
+                || !PlayerInventoryThrowItemPatch.ThrownItems.ContainsKey(itemNetId))
+            {
+                return;
+            }
+
+            TryAddMarker(_lastMapView, lootItem);
+        }
+
+        private void OnDestroyLoot(LootItem lootItem)
+        {
+            if (lootItem is null || lootItem.Item is null)
+            {
+                return;
+            }
+
+            TryRemoveMarker(lootItem.GetNetId());
+        }
+
+        private void RemoveStaleMarkers()
+        {
+            var gameWorld = Singleton<GameWorld>.Instance;
+            foreach (var itemNetId in _backpackMarkers.Keys.ToList())
+            {
+                // check if item is in world
+                if (gameWorld.LootItems.ContainsKey(itemNetId))
+                {
+                    continue;
+                }
+
+                TryRemoveMarker(itemNetId);
+            }
+        }
+
+        private void TryAddMarker(MapView map, LootItem lootItem)
+        {
+            if (lootItem is null || lootItem.Item is null)
+            {
+                return;
+            }
+
+            var itemNetId = lootItem.GetNetId();
+            if (_backpackMarkers.ContainsKey(itemNetId))
+            {
+                return;
+            }
+
+            var color = Settings.BackpackColor.Value;
+
+            // try adding the marker
+            var marker = map.AddTransformMarker(lootItem.TrackableTransform, lootItem.Item.ShortName.BsgLocalized(),
+                                                BackpackCategory, color, BackpackImagePath, BackpackSize);
+
+            _backpackMarkers[itemNetId] = marker;
+        }
+
+        private void TryRemoveMarker(int itemNetId)
+        {
+            if (!_backpackMarkers.ContainsKey(itemNetId))
+            {
+                return;
+            }
+
+            _backpackMarkers[itemNetId].ContainingMapView.RemoveMapMarker(_backpackMarkers[itemNetId]);
+            _backpackMarkers.Remove(itemNetId);
+        }
+
+        private void TryRemoveMarkers()
+        {
+            foreach (var itemNetId in _backpackMarkers.Keys.ToList())
+            {
+                TryRemoveMarker(itemNetId);
+            }
+            _backpackMarkers.Clear();
+        }
+}
+}

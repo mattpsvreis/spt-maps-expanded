@@ -4,4 +4,4 @@ This pack is distributed as part of **Maps Extended**. Full project licensing is
 repository root `LICENSE`, `NOTICE`, and `THIRD-PARTY.md`.
 
 Artwork and map data here are **not** MIT. See the root `THIRD-PARTY.md` for Tarkov.dev
-SVG (CC BY-NC-SA 4.0), Satellite raster, Icebreaker, and Factory Classic terms.
+SVG (CC BY-NC-SA 4.0), Satellite raster, Icebreaker, and Classic Maps ports by LennoxP90 terms.

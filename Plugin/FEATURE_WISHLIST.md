@@ -1,28 +1,13 @@
-## Potential Features
+## Potential Features (inherited from DynamicMaps)
 
 ### Configuration
 
 - Configure colors/icons for dynamic markers
 
-### Marker/Label Filtering
-
-- Be able to toggle on/off categories of marker and labels
-
-### Heatmaps
-
-- Heatmap for enemies and loot would be cool
-
-### Map Markers
-
-- Add lootable/loose loot dynamic markers?
-- Add temporary marker (left click?)
-- Add player created markers (right click menu?)
-
 #### Tooltips
 
 - Locked door: what key is needed
 - Quests: the condition's description
-- Bot debug markers: additional bot debug information
 - Extracts: if cannot use immediately, what the hint is to enable it
 - Switches/buttons: what the button does
 
@@ -47,8 +32,7 @@
 
 ### Immersion and Difficulty
 
-- Tarkov is an immersive game and mod should support players that want to preserve that
 - Add additional options that support that:
   - Only show player position if compass equipped
   - Only reveal locked doors that the character has interacted with
-  - Only allow map usage if player has map equipped
+  - Only allow map usage if player has map equipped <- pretty sure this is already done

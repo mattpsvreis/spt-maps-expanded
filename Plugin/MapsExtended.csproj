@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <AssemblyName>MapsExtended</AssemblyName>
-    <Description>Maps Extended — in-raid maps, marker packs, and faction colouring for SPT</Description>
+    <Description>Maps Extended — in-raid maps, marker packs, and dynamic bot markers on maps (radar) for SPT</Description>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
     <Deterministic>true</Deterministic>
