@@ -1,19 +1,57 @@
 # Maps Extended
 
-Standalone SPT map plugin for **SPT 4.1.x**. One install covers the full map UI, faction marker colours, Map Variants / Classic Maps ports by LennoxP90 aliases, and bundled Extended map packs - no companion plugin required.
+**Maps Extended** is a full replacement for Tarkov’s map screen on **SPT 4.1.x**. It gives you a real interactive map in hideout and in raid - multi-floor layers, peeks, a minimap, and live markers for extracts, quests, keys, bots, loot, and more - plus bundled map packs and automatic switching when you (optionally) use `Map Variants` by LennoxP90, `Classic Maps` by LennoxP90, or `Manimal's backports`.
 
 ## Features
 
-- Full in-raid / out-of-raid map UI (peek, minimap, markers, extracts, quests, etc.)
-- **Per-faction marker colours** — Black Division, UNTAR, RUAF, Remnant, ISB, White Tusks, plus MoreBotsAPI discovery
-- **Map Variants / Classic Maps ports by LennoxP90 / Manimal backports** auto-selection for matching Extended packs
-- Bundled **map packs** under `Addons/Extended` (Satellite for some, Abstract for all, including modded maps such as Manimal's backports or LennoxP90's Classic ports)
+### Map UI
+- Replaces the vanilla inventory map screen (toggleable)
+- Browse every map out of raid with a map selector
+- In raid: full map, hold/toggle peek, and optional corner minimap
+- Multi-level maps with auto floor select from player height, or manual slider / hotkeys
+- Pan, zoom (mouse or hotkeys), center on player, retain position between opens
+- Animated transitions between full map / peek / minimap
+
+### Markers (in raid)
+- **You** — player arrow, configurable colour
+- **Others** — friendlies, PMCs, scavs, bosses, non-vanilla / modded bots (server config can restrict certain categories)
+- **Quests** — objective markers in raid; out of raid after you’ve visited that map once (zone cache)
+- **Extracts** — extracts, transit points, secret extracts; optional open / closed / requirements colouring
+- **Locked doors** — lock / key / car-door icons coloured by whether the key is on you, in stash, or missing
+- **World** — BTR, airdrops, your dropped backpacks, wishlist items (loose or in containers), hidden stashes
+- **Corpses** — friendly, player-killed, boss, and other (each toggleable)
+- Optional marker icon packs via `Addons/*/Markers` (other modders are welcome to add their own stuff as addons!)
+
+### Progression / immersion
+- Optional “require paper map in inventory” to open the map in raid
+- Intel Center level gates for PMCs, bosses, scavs, friendlies, corpses, airdrops, wishlist loot, and hidden stashes
+
+### Faction colours
+- Tint bot / player markers by faction when Custom Faction Colours is enabled
+- Built-in groups such as Black Division, UNTAR, RUAF, Remnants, ISB, White Tusks
+- Discovers extra roles via MoreBotsAPI when present
+- Per-faction colours and optional grouping in F12
+
+### Bundled map packs (`Addons/Extended`)
+- **Satellite** and **Abstract** styles for stock maps (coverage varies by location)
+- **Factory Classic** pack for Classic Maps / Factory variants
+- **Manimal** Interchange / Labs-oriented packs
+- **Icebreaker** (and RE3MR) packs when that map is installed
+- **Per-location preference in F12:** Satellite / Abstract / Automatic
+- **BONUS:** Other modders are welcome to add their own map packs via addons! Just follow the structure already exemplified in this mod.
+
+### Soft integrations
+- **Map Variants** (LennoxP90) — picks the matching Extended pack when a variant resolves
+- **Classic Maps** (LennoxP90) — Factory Classic alias when classic Factory is active
+- **Manimal**'s Interchange / Labs / Icebreaker backports — matching packs when those maps load
+- **FIKA** — headless clients skip the UI; co-op friendly markers when allowed
+- **SamSWAT HeliCrash** — optional crash-site marker
+- **MoreBotsAPI** — extra faction dynamic colour discovery
 
 ## Install
 
-1. Remove older map plugins if present (DynamicMaps, DynamicMaps Extended) — Maps Extended replaces them and is incompatible with them.
-2. Copy `BepInEx/plugins/MapsExtended` (and `SPT_Runtime/user/mods/MapsExtended` if included) into your SPT root.
-3. Ensure `Unity.VectorGraphics` is installed as required by the map renderer.
+1. Download the release files.
+2. Extract the files from the provided .zip into the root folder of your SPT installation (the folder where SPT_Runtime and BepInEx resides at)
 
 ## Requirements
 
@@ -22,9 +60,7 @@ Standalone SPT map plugin for **SPT 4.1.x**. One install covers the full map UI,
 
 ## F12 config
 
-- **Custom Faction Colours** — enable + per-faction colours / optional grouping, includes modded/backported factions such as Black Division, UNTAR, RUAF, Remnants, and ISB.
-- **Map Selection** — Satellite / Abstract / Automatic preferences per location
-- Backports / Classic maps auto-select when Map Variants or Classic Maps ports activates them
+Everything above is toggled in Configuration Manager under Maps Extended: General, Markers, Progression, In-Raid, Mini-map, Marker Colors, External Mod Support, Map Selection, and Custom Faction Colours.
 
 ## Licensing
 
