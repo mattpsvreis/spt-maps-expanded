@@ -36,11 +36,11 @@ namespace MapsExtended.Integration
                 _handler = OnVariantResolved;
                 _resolvedEvent.AddEventHandler(null, _handler);
                 _subscribed = true;
-                Plugin.Log?.LogInfo("[MapsExtended] Subscribed to MapVariants VariantResolved for live map-pack refresh.");
+                Plugin.Log?.LogInfo("[MapsExpanded] Subscribed to MapVariants VariantResolved for live map-pack refresh.");
             }
             catch (Exception e)
             {
-                Plugin.Log?.LogWarning($"[MapsExtended] Could not subscribe to MapVariants VariantResolved: {e.Message}");
+                Plugin.Log?.LogWarning($"[MapsExpanded] Could not subscribe to MapVariants VariantResolved: {e.Message}");
             }
         }
 
@@ -57,7 +57,7 @@ namespace MapsExtended.Integration
             }
             catch (Exception e)
             {
-                Plugin.Log?.LogWarning($"[MapsExtended] VariantResolved unsubscribe failed: {e.Message}");
+                Plugin.Log?.LogWarning($"[MapsExpanded] VariantResolved unsubscribe failed: {e.Message}");
             }
 
             _subscribed = false;
@@ -92,7 +92,7 @@ namespace MapsExtended.Integration
             }
             catch (Exception e)
             {
-                Plugin.Log?.LogWarning($"[MapsExtended] VariantResolved refresh failed: {e.Message}");
+                Plugin.Log?.LogWarning($"[MapsExpanded] VariantResolved refresh failed: {e.Message}");
             }
         }
 

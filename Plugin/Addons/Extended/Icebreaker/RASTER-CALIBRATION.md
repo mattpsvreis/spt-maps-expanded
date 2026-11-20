@@ -1,4 +1,4 @@
-# Original Icebreaker raster registration — beta 3
+# Original Icebreaker raster registration ï¿½ beta 3
 
 The previous rectangle was [-65.5,-64.5]..[77,67.4]. It placed the recorded
 helipad position above the visible ship. Do not reuse that rectangle.
@@ -30,4 +30,4 @@ underlays are suppressed without removing markers or changing their floor status
 
 Stable map viewport bounds keep transparent margins from changing zoom limits
 when selecting another style. Markers, trails and quests remain owned by
-Maps Extended. No live game installation was modified by this build.
+Maps Expanded. No live game installation was modified by this build.

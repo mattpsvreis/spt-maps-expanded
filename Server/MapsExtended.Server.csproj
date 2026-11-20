@@ -2,13 +2,13 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <AssemblyName>MapsExtended</AssemblyName>
+    <AssemblyName>MapsExpanded</AssemblyName>
     <RootNamespace>MapsExtended</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <OutputType>Library</OutputType>
     <Version>1.0.0</Version>
-    <!-- Matches Plugin postbuild: Server/bin/Release/MapsExtended/ -->
+    <!-- Matches Plugin postbuild: Server/bin/Release/MapsExpanded/ -->
     <OutputPath>bin\$(Configuration)\$(AssemblyName)\</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
@@ -21,6 +21,9 @@
 
   <ItemGroup>
     <None Update="LICENSE">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="config.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

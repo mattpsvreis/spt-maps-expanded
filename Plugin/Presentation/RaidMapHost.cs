@@ -49,7 +49,7 @@ namespace MapsExtended.Presentation
 
         internal static RaidMapHost Create(GameObject parent)
         {
-            var go = UIUtils.CreateUIGameObject(parent, "MapsExtendedHost");
+            var go = UIUtils.CreateUIGameObject(parent, "MapsExpandedHost");
             return go.AddComponent<RaidMapHost>();
         }
 
@@ -525,7 +525,7 @@ namespace MapsExtended.Presentation
                 return;
             }
 
-            Plugin.Log.LogInfo($"Maps Extended: Loading map {mapDef.DisplayName}");
+            Plugin.Log.LogInfo($"Maps Expanded: Loading map {mapDef.DisplayName}");
             try
             {
                 _levelSelectSlider.OnLoadMap(mapDef, mapDef.DefaultLevel);

@@ -1,10 +1,10 @@
-﻿# Third-party licensing — Maps Extended
+# Third-party licensing — Maps Expanded
 
-**Maps Extended** ships its own plugin/server binaries under MIT (`LICENSE`, `NOTICE`)
+**Maps Expanded** ships its own plugin/server binaries under MIT (`LICENSE`, `NOTICE`)
 and redistributes map definitions / artwork under the same third-party terms already
 documented by the upstream projects whose assets were incorporated.
 
-Maps Extended does **not** relicense third-party artwork as MIT.
+Maps Expanded does **not** relicense third-party artwork as MIT.
 
 Plugin/server source and binaries → see `LICENSE` (MIT) and `NOTICE`.  
 Artwork and data packs → remain under the licences below.
@@ -15,12 +15,12 @@ Artwork and data packs → remain under the licences below.
 
 See `NOTICE` for full copyright lines. Short provenance:
 
-| Upstream | Role in Maps Extended |
+| Upstream | Role in Maps Expanded |
 |---|---|
 | [SPT-DynamicMaps](https://github.com/acidphantasm/SPT-DynamicMaps) | Core map UI idea / markers idea / server item restrictions idea |
 | [DynamicMaps Extended](https://github.com/black-hawk95/DynamicMaps-Extended) | Faction colours, Map Variants support, packaged custom map data |
 
-Those projects’ own docs state that **third-party artwork is not MIT**. Maps Extended keeps that separation.
+Those projects’ own docs state that **third-party artwork is not MIT**. Maps Expanded keeps that separation.
 
 ---
 
@@ -39,7 +39,7 @@ https://creativecommons.org/licenses/by-nc-sa/4.0/
 
 ## Tarkov.dev / related raster (Satellite) artwork
 
-Satellite raster previews packaged in Maps Extended’s `Addons/Extended` packs retain
+Satellite raster previews packaged in Maps Expanded’s `Addons/Extended` packs retain
 original source attribution and applicable upstream terms. Bundling here does not
 create new redistribution rights beyond what upstream projects already asserted.
 
@@ -57,4 +57,4 @@ create new redistribution rights beyond what upstream projects already asserted.
 ## Classic Maps ports by LennoxP90 map layers
 
 Sourced via upstream Extended packaging from older DynamicMaps MIT-licensed map data.
-Retains original attribution; not independently relicensed by Maps Extended.
+Retains original attribution; not independently relicensed by Maps Expanded.

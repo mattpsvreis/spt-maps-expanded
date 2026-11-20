@@ -160,7 +160,7 @@ namespace MapsExtended.Integration
                 return;
             }
 
-            Plugin.Log?.LogInfo("[MapsExtended:DBG] " + message);
+            Plugin.Log?.LogInfo("[MapsExpanded:DBG] " + message);
         }
     }
 }

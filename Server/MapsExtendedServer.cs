@@ -13,10 +13,10 @@ namespace MapsExtended;
 
 public record ModMetadata : IModMetadata
 {
-    public string ModGuid { get; init; } = "com.dark.mapsextended";
-    public string Name { get; init; } = "Maps Extended";
+    public string ModGuid { get; init; } = "com.dark.mapsexpanded";
+    public string Name { get; init; } = "Maps Expanded";
     public string Author { get; init; } = "Dark";
-    public List<string>? Contributors { get; init; } = ["Maps Extended contributors", "mpstark", "dirtbikercj", "acidphantasm"];
+    public List<string>? Contributors { get; init; } = ["Maps Expanded contributors", "mpstark", "dirtbikercj", "acidphantasm"];
     public SemanticVersioning.Version Version { get; init; } = new("1.0.0");
     public SemanticVersioning.Range SptVersion { get; init; } = new("~4.1.0");
     public List<string>? Incompatibilities { get; init; } = ["com.mpstark.dynamicmaps", "com.blackhawk.dynamicmapsextended", "com.dark.dynamicmapsplus"];
@@ -300,7 +300,7 @@ public class MapsExtendedServer(
 
 /// <summary>
 /// Server-driven policy for which player/bot marker categories are allowed in raid.
-/// Serialized to clients via /mapsextended/load (JSON property names must stay stable).
+/// Serialized to clients via /mapsexpanded/load (JSON property names must stay stable).
 /// </summary>
 public class ServerMapPolicy
 {

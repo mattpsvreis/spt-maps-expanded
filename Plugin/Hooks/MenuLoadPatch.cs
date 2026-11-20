@@ -43,11 +43,11 @@ namespace MapsExtended.Hooks
 
                 RaidMapHost.ServerConfig = config;
                 _serverConfigLoaded = true;
-                Plugin.Log?.LogInfo("Loaded Maps Extended server config");
+                Plugin.Log?.LogInfo("Loaded Maps Expanded server config");
             }
             catch (Exception e)
             {
-                Plugin.Log?.LogError("Caught error while trying to load Maps Extended server config");
+                Plugin.Log?.LogError("Caught error while trying to load Maps Expanded server config");
                 Plugin.Log?.LogError(e.ToString());
             }
             finally
@@ -60,14 +60,14 @@ namespace MapsExtended.Hooks
         {
             try
             {
-                var payload = await RequestHandler.GetJsonAsync("/mapsextended/load");
+                var payload = await RequestHandler.GetJsonAsync("/mapsexpanded/load");
                 var config = JsonConvert.DeserializeObject<ServerMapPolicy>(payload);
                 return config ?? throw new InvalidOperationException("Server config was empty");
             }
             catch (Exception ex)
             {
-                Plugin.Log?.LogError("Failed to load Maps Extended server config: " + ex);
-                NotificationManager.DisplayWarningNotification("Failed to load Maps Extended server config - check the server");
+                Plugin.Log?.LogError("Failed to load Maps Expanded server config: " + ex);
+                NotificationManager.DisplayWarningNotification("Failed to load Maps Expanded server config - check the server");
                 return null;
             }
         }

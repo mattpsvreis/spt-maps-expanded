@@ -29,7 +29,7 @@ public class CustomStaticRouter : StaticRouter
         return
         [
             new RouteAction<EmptyRequestData>(
-                "/mapsextended/load",
+                "/mapsexpanded/load",
                 async (
                     url,
                     info,

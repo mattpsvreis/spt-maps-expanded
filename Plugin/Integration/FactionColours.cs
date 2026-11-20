@@ -25,7 +25,7 @@ namespace MapsExtended.Integration
         private static readonly Dictionary<int, ConfigEntry<string>> GroupOverrides = new();
         private static ConfigFile _config;
         internal const string AutomaticGroup = "Automatic";
-        internal const string NativeGroup = "Maps Extended default";
+        internal const string NativeGroup = "Maps Expanded default";
         private static readonly HashSet<int> UntarBossRoles = new();
         private static readonly Dictionary<string, MemberInfo> Members = new();
         private static readonly HashSet<string> Warnings = new();
@@ -62,7 +62,7 @@ namespace MapsExtended.Integration
 
             Enabled.SettingChanged += SettingsChanged;
             TryReadRegistry();
-            Plugin.Log?.LogInfo("[MapsExtended] Faction colour support ready.");
+            Plugin.Log?.LogInfo("[MapsExpanded] Faction colour support ready.");
         }
 
         internal static bool IsUntarBossRole(IPlayer player)
@@ -200,7 +200,7 @@ namespace MapsExtended.Integration
                 if (!_registryAttempted)
                 {
                     _registryAttempted = true;
-                    Plugin.Log?.LogInfo("[MapsExtended] MoreBotsAPI absent; using known role-name fallback for faction colours.");
+                    Plugin.Log?.LogInfo("[MapsExpanded] MoreBotsAPI absent; using known role-name fallback for faction colours.");
                 }
 
                 return;
@@ -274,14 +274,14 @@ namespace MapsExtended.Integration
                         "Group with - " + ConfigName(bot.role),
                         AutomaticGroup,
                         new ConfigDescription(
-                            $"Automatic uses {Roles[bot.id]}. Pick another colour group to share it, or Maps Extended default to leave unchanged.",
+                            $"Automatic uses {Roles[bot.id]}. Pick another colour group to share it, or Maps Expanded default to leave unchanged.",
                             new AcceptableValueList<string>(choices)));
                     GroupOverrides[bot.id] = entry;
                     entry.SettingChanged += SettingsChanged;
                 }
 
                 _registryLoaded = true;
-                Plugin.Log?.LogInfo($"[MapsExtended] Discovered {discovered.Count} custom roles across {Colours.Count} colour groups.");
+                Plugin.Log?.LogInfo($"[MapsExpanded] Discovered {discovered.Count} custom roles across {Colours.Count} colour groups.");
             }
             catch (Exception ex)
             {

@@ -33,8 +33,8 @@ namespace MapsExtended
     [BepInIncompatibility("com.dark.dynamicmapsplus")]
     public class Plugin : BaseUnityPlugin
     {
-        public const string Guid = "com.dark.mapsextended";
-        public const string Name = "Maps Extended";
+        public const string Guid = "com.dark.mapsexpanded";
+        public const string Name = "Maps Expanded";
         public const int TarkovVersion = 40743;
 
         public static Plugin Instance;
@@ -48,7 +48,7 @@ namespace MapsExtended
         {
             if (DebugEnabled)
             {
-                Log?.LogInfo("[MapsExtended:DBG] " + message);
+                Log?.LogInfo("[MapsExpanded:DBG] " + message);
             }
         }
 
@@ -77,7 +77,7 @@ namespace MapsExtended
                 "0. Debug",
                 "EnableDebugLogging",
                 false,
-                "Detailed Maps Extended diagnostics for faction colours and map aliases.");
+                "Detailed Maps Expanded diagnostics for faction colours and map aliases.");
 
             Settings.Init(Config);
             FactionColours.Initialize(Config);
@@ -141,8 +141,8 @@ namespace MapsExtended
             if (Type.GetType("Unity.VectorGraphics.SVGParser, Unity.VectorGraphics") == null)
             {
                 MessageBoxHelper.Show(
-                    "You have incorrectly installed Maps Extended.\nUnity.VectorGraphics is missing.\nPlease reinstall correctly.\nQuitting.",
-                    "Maps Extended Error",
+                    "You have incorrectly installed Maps Expanded.\nUnity.VectorGraphics is missing.\nPlease reinstall correctly.\nQuitting.",
+                    "Maps Expanded Error",
                     MessageBoxHelper.MessageBoxType.OK);
                 Process.GetCurrentProcess().Kill();
             }

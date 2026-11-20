@@ -1,6 +1,6 @@
-# Maps Extended
+# Maps Expanded
 
-**Maps Extended** is a full replacement for Tarkov’s map screen on **SPT 4.1.x**. It gives you a real interactive map in hideout and in raid - multi-floor layers, peeks, a minimap, and live markers for extracts, quests, keys, bots, loot, and more - plus bundled map packs and automatic switching when you (optionally) use `Map Variants` by LennoxP90, `Classic Maps` by LennoxP90, or `Manimal's backports`.
+**Maps Expanded** is a full replacement for Tarkov’s map screen on **SPT 4.1.x**. It gives you a real interactive map in hideout and in raid - multi-floor layers, peeks, a minimap, and live markers for extracts, quests, keys, bots, loot, and more - plus bundled map packs and automatic switching when you (optionally) use `Map Variants` by LennoxP90, `Classic Maps` by LennoxP90, or `Manimal's backports`.
 
 ## Features
 
@@ -60,7 +60,7 @@
 
 ## F12 config
 
-Everything above is toggled in Configuration Manager under Maps Extended: General, Markers, Progression, In-Raid, Mini-map, Marker Colors, External Mod Support, Map Selection, and Custom Faction Colours.
+Everything above is toggled in Configuration Manager under Maps Expanded: General, Markers, Progression, In-Raid, Mini-map, Marker Colors, External Mod Support, Map Selection, and Custom Faction Colours.
 
 ## Licensing
 
@@ -70,4 +70,4 @@ Everything above is toggled in Configuration Manager under Maps Extended: Genera
 | Map artwork / data packs | **Not MIT** — `THIRD-PARTY.md` |
 | Tarkov.dev SVG / Icebreaker adaptations | **CC BY-NC-SA 4.0** |
 
-Maps Extended is MIT-licensed. Upstream copyright notices for incorporated software are retained in `LICENSE` / `NOTICE`.
+Maps Expanded is MIT-licensed. Upstream copyright notices for incorporated software are retained in `LICENSE` / `NOTICE`.
