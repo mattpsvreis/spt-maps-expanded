@@ -1,0 +1,9 @@
+﻿Maps Extended — Extended map pack
+=================================
+
+This `Addons/Extended` folder is part of **Maps Extended**. It ships map definitions
+and artwork previously packaged by DynamicMaps Extended / DynamicMaps Plus and now
+distributed with this standalone mod.
+
+Plugin/server software → MIT (`LICENSE` / `NOTICE` at the Maps Extended root).  
+Artwork in this pack → NOT MIT — see `THIRD-PARTY.md` in this folder.

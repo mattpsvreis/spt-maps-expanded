@@ -1,0 +1,384 @@
+{
+  "DisplayName": "Icebreaker (RE3MR)",
+  "Author": "TarkovBOT.eu via Tarkov.dev",
+  "AuthorLink": "https://tarkovbot.eu/",
+  "MapInternalNames": [ "icebreaker" ],
+  "CoordinateRotation": 180,
+  "Bounds": {
+    "Min": { "x": -17.5, "y": -87 },
+    "Max": { "x": 17.37, "y": 61.3 }
+  },
+  "DefaultLevel": 6,
+  "Layers": {
+    "Control Room": {
+      "Level": 0,
+      "ImagePath": "Layers/Icebreaker-Deck_m3.svg",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": { "x": -17.5, "y": -87 },
+        "Max": { "x": 17.37, "y": 61.3 }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": -10000
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 3.5
+          }
+        }
+      ]
+    },
+    "Engine Room": {
+      "Level": 1,
+      "ImagePath": "Layers/Icebreaker-Deck_m2.svg",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": { "x": -17.5, "y": -87 },
+        "Max": { "x": 17.37, "y": 61.3 }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 3.5
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 5.7
+          }
+        }
+      ]
+    },
+    "Engine Room (upper)": {
+      "Level": 2,
+      "ImagePath": "Layers/Icebreaker-Deck_m2.svg",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": { "x": -17.5, "y": -87 },
+        "Max": { "x": 17.37, "y": 61.3 }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 5.7
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 9.5
+          }
+        }
+      ]
+    },
+    "Fuel Pumps (lower)": {
+      "Level": 3,
+      "ImagePath": "Layers/Icebreaker-Deck_m1.svg",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": { "x": -17.5, "y": -87 },
+        "Max": { "x": 17.37, "y": 61.3 }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 9.5
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 11.9
+          }
+        }
+      ]
+    },
+    "Fuel Pumps": {
+      "Level": 4,
+      "ImagePath": "Layers/Icebreaker-Deck_m1.svg",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": { "x": -17.5, "y": -87 },
+        "Max": { "x": 17.37, "y": 61.3 }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 11.9
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 15
+          }
+        }
+      ]
+    },
+    "Storage / Security": {
+      "Level": 5,
+      "ImagePath": "Layers/Icebreaker-Deck_0.svg",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": { "x": -17.5, "y": -87 },
+        "Max": { "x": 17.37, "y": 61.3 }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 15
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 17.9
+          }
+        }
+      ]
+    },
+    "Infirmary": {
+      "Level": 6,
+      "ImagePath": "Layers/Icebreaker-Deck_1.svg",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": { "x": -17.5, "y": -87 },
+        "Max": { "x": 17.37, "y": 61.3 }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 17.9
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 20.9
+          }
+        }
+      ]
+    },
+    "Helipad": {
+      "Level": 7,
+      "ImagePath": "Layers/Icebreaker-Deck_2.svg",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": { "x": -17.5, "y": -87 },
+        "Max": { "x": 17.37, "y": 61.3 }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 20.9
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 23
+          }
+        }
+      ]
+    },
+    "Gym / Canteen": {
+      "Level": 8,
+      "ImagePath": "Layers/Icebreaker-Deck_3.svg",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": { "x": -17.5, "y": -87 },
+        "Max": { "x": 17.37, "y": 61.3 }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 23
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 25.8
+          }
+        }
+      ]
+    },
+    "Accommodation (lower)": {
+      "Level": 9,
+      "ImagePath": "Layers/Icebreaker-Deck_4.svg",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": { "x": -17.5, "y": -87 },
+        "Max": { "x": 17.37, "y": 61.3 }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 25.8
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 28.6
+          }
+        }
+      ]
+    },
+    "Accommodation (mid)": {
+      "Level": 10,
+      "ImagePath": "Layers/Icebreaker-Deck_5.svg",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": { "x": -17.5, "y": -87 },
+        "Max": { "x": 17.37, "y": 61.3 }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 28.6
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 31.4
+          }
+        }
+      ]
+    },
+    "Accommodation (upper)": {
+      "Level": 11,
+      "ImagePath": "Layers/Icebreaker-Deck_6.svg",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": { "x": -17.5, "y": -87 },
+        "Max": { "x": 17.37, "y": 61.3 }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 31.4
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 34
+          }
+        }
+      ]
+    },
+    "Officers' Deck": {
+      "Level": 12,
+      "ImagePath": "Layers/Icebreaker-Deck_7.svg",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": { "x": -17.5, "y": -87 },
+        "Max": { "x": 17.37, "y": 61.3 }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 34
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 36.6
+          }
+        }
+      ]
+    },
+    "Stairs (blocked)": {
+      "Level": 13,
+      "ImagePath": "Layers/Icebreaker-Deck_8.svg",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": { "x": -17.5, "y": -87 },
+        "Max": { "x": 17.37, "y": 61.3 }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 36.6
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 39
+          }
+        }
+      ]
+    },
+    "Bridge": {
+      "Level": 14,
+      "ImagePath": "Layers/Icebreaker-Deck_9.svg",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": { "x": -17.5, "y": -87 },
+        "Max": { "x": 17.37, "y": 61.3 }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 39
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 41.9
+          }
+        }
+      ]
+    },
+    "Bridge Roof": {
+      "Level": 15,
+      "ImagePath": "Layers/Icebreaker-Deck_10.svg",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": { "x": -17.5, "y": -87 },
+        "Max": { "x": 17.37, "y": 61.3 }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 41.9
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 10000
+          }
+        }
+      ]
+    }
+  },
+  "Labels": [],
+  "StaticMarkers": []
+}

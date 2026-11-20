@@ -1,0 +1,486 @@
+{
+  "DisplayName": "Icebreaker",
+  "Author": "TarkovBOT.eu via Tarkov.dev",
+  "AuthorLink": "https://tarkovbot.eu/",
+  "MapInternalNames": [ "icebreaker" ],
+  "CoordinateRotation": 180,
+  "Bounds": {
+    "Min": {
+      "x": -20,
+      "y": -90
+    },
+    "Max": {
+      "x": 20,
+      "y": 85
+    }
+  },
+  "DefaultLevel": 6,
+  "Layers": {
+    "Control Room": {
+      "Level": 0,
+      "ImagePath": "Layers/00-Control-Room.png",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": {
+          "x": -86.43459915611814,
+          "y": -172.08163265306123
+        },
+        "Max": {
+          "x": 105.9915611814346,
+          "y": 129.42857142857142
+        }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": -10000
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 3.5
+          }
+        }
+      ]
+    },
+    "Engine Room": {
+      "Level": 1,
+      "ImagePath": "Layers/01-Engine-Room.png",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": {
+          "x": -86.43459915611814,
+          "y": -172.08163265306123
+        },
+        "Max": {
+          "x": 105.9915611814346,
+          "y": 129.42857142857142
+        }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 3.5
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 5.7
+          }
+        }
+      ]
+    },
+    "Engine Room (upper)": {
+      "Level": 2,
+      "ImagePath": "Layers/02-Engine-Room-Upper.png",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": {
+          "x": -86.43459915611814,
+          "y": -172.08163265306123
+        },
+        "Max": {
+          "x": 105.9915611814346,
+          "y": 129.42857142857142
+        }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 5.7
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 9.5
+          }
+        }
+      ]
+    },
+    "Fuel Pumps (lower)": {
+      "Level": 3,
+      "ImagePath": "Layers/03-Fuel-Pumps-Lower.png",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": {
+          "x": -86.43459915611814,
+          "y": -172.08163265306123
+        },
+        "Max": {
+          "x": 105.9915611814346,
+          "y": 129.42857142857142
+        }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 9.5
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 11.9
+          }
+        }
+      ]
+    },
+    "Fuel Pumps": {
+      "Level": 4,
+      "ImagePath": "Layers/04-Fuel-Pumps.png",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": {
+          "x": -86.43459915611814,
+          "y": -172.08163265306123
+        },
+        "Max": {
+          "x": 105.9915611814346,
+          "y": 129.42857142857142
+        }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 11.9
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 15
+          }
+        }
+      ]
+    },
+    "Storage / Security": {
+      "Level": 5,
+      "ImagePath": "Layers/05-Storage-Security.png",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": {
+          "x": -86.43459915611814,
+          "y": -172.08163265306123
+        },
+        "Max": {
+          "x": 105.9915611814346,
+          "y": 129.42857142857142
+        }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 15
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 17.9
+          }
+        }
+      ]
+    },
+    "Infirmary": {
+      "Level": 6,
+      "ImagePath": "Layers/06-Infirmary.png",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": {
+          "x": -86.43459915611814,
+          "y": -172.08163265306123
+        },
+        "Max": {
+          "x": 105.9915611814346,
+          "y": 129.42857142857142
+        }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 17.9
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 20.9
+          }
+        }
+      ]
+    },
+    "Helipad": {
+      "Level": 7,
+      "ImagePath": "Layers/07-Helipad.png",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": {
+          "x": -86.43459915611814,
+          "y": -172.08163265306123
+        },
+        "Max": {
+          "x": 105.9915611814346,
+          "y": 129.42857142857142
+        }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 20.9
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 23
+          }
+        }
+      ]
+    },
+    "Gym / Canteen": {
+      "Level": 8,
+      "ImagePath": "Layers/08-Gym-Canteen.png",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": {
+          "x": -86.43459915611814,
+          "y": -172.08163265306123
+        },
+        "Max": {
+          "x": 105.9915611814346,
+          "y": 129.42857142857142
+        }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 23
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 25.8
+          }
+        }
+      ]
+    },
+    "Accommodation (lower)": {
+      "Level": 9,
+      "ImagePath": "Layers/09-Accommodation-Lower.png",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": {
+          "x": -86.43459915611814,
+          "y": -172.08163265306123
+        },
+        "Max": {
+          "x": 105.9915611814346,
+          "y": 129.42857142857142
+        }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 25.8
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 28.6
+          }
+        }
+      ]
+    },
+    "Accommodation (mid)": {
+      "Level": 10,
+      "ImagePath": "Layers/10-Accommodation-Mid.png",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": {
+          "x": -86.43459915611814,
+          "y": -172.08163265306123
+        },
+        "Max": {
+          "x": 105.9915611814346,
+          "y": 129.42857142857142
+        }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 28.6
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 31.4
+          }
+        }
+      ]
+    },
+    "Accommodation (upper)": {
+      "Level": 11,
+      "ImagePath": "Layers/11-Accommodation-Upper.png",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": {
+          "x": -86.43459915611814,
+          "y": -172.08163265306123
+        },
+        "Max": {
+          "x": 105.9915611814346,
+          "y": 129.42857142857142
+        }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 31.4
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 34
+          }
+        }
+      ]
+    },
+    "Officers' Deck": {
+      "Level": 12,
+      "ImagePath": "Layers/12-Officers-Deck.png",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": {
+          "x": -86.43459915611814,
+          "y": -172.08163265306123
+        },
+        "Max": {
+          "x": 105.9915611814346,
+          "y": 129.42857142857142
+        }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 34
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 36.6
+          }
+        }
+      ]
+    },
+    "Stairs (blocked)": {
+      "Level": 13,
+      "ImagePath": "Layers/13-Stairs-Blocked.png",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": {
+          "x": -86.43459915611814,
+          "y": -172.08163265306123
+        },
+        "Max": {
+          "x": 105.9915611814346,
+          "y": 129.42857142857142
+        }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 36.6
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 39
+          }
+        }
+      ]
+    },
+    "Bridge": {
+      "Level": 14,
+      "ImagePath": "Layers/14-Bridge.png",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": {
+          "x": -86.43459915611814,
+          "y": -172.08163265306123
+        },
+        "Max": {
+          "x": 105.9915611814346,
+          "y": 129.42857142857142
+        }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 39
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 41.9
+          }
+        }
+      ]
+    },
+    "Bridge Roof": {
+      "Level": 15,
+      "ImagePath": "Layers/15-Bridge-Roof.png",
+      "TesselationIndex": 0,
+      "ImageBounds": {
+        "Min": {
+          "x": -86.43459915611814,
+          "y": -172.08163265306123
+        },
+        "Max": {
+          "x": 105.9915611814346,
+          "y": 129.42857142857142
+        }
+      },
+      "GameBounds": [
+        {
+          "Min": {
+            "x": -20,
+            "y": -90,
+            "z": 41.9
+          },
+          "Max": {
+            "x": 20,
+            "y": 85,
+            "z": 10000
+          }
+        }
+      ]
+    }
+  },
+  "Labels": [],
+  "StaticMarkers": []
+}

@@ -1,0 +1,33 @@
+Maps Extended
+=============
+
+This project is **Maps Extended** — a standalone SPT map plugin (client + optional
+server mod). It is not DynamicMaps, DynamicMaps Extended, or DynamicMaps Plus.
+
+Maps Extended includes MIT-licensed software adapted from those upstream projects.
+Attribution for that incorporated code is retained below as required by MIT.
+
+Upstream projects (MIT software incorporated into Maps Extended)
+----------------------------------------------------------------
+
+1. DynamicMaps / SPT-DynamicMaps
+   - Source: https://github.com/acidphantasm/SPT-DynamicMaps (originally mpstark)
+   - Licence: MIT — Copyright (c) Michael P. Starkweather and contributors
+   - Used for: core in-raid / out-of-raid map UI, markers, patches, server map items
+
+2. DynamicMaps Extended
+   - Source: https://github.com/black-hawk95/DynamicMaps-Extended
+   - Licence: MIT — Copyright (c) DynamicMaps Extended contributors
+   - Used for: faction marker colouring, MoreBotsAPI role discovery, MapVariants /
+     FactoryClassic alias selection concepts, and packaged map definitions / artwork
+     redistributed under the third-party terms Extended already documented
+
+3. DynamicMaps Plus
+   - Licence: MIT — Copyright (c) DynamicMaps Plus contributors
+   - Used for: SPT 4.1 / DynamicMaps 1.3-compatible integration work and the native
+     Addons/Extended map pack layout folded into this standalone Maps Extended build
+
+Third-party artwork is NOT MIT — see THIRD-PARTY.md (Tarkov.dev SVG CC BY-NC-SA 4.0,
+Icebreaker CC BY-NC-SA 4.0, etc.).
+
+This NOTICE must be retained with redistributions of Maps Extended.
