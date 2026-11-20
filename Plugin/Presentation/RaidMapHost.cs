@@ -196,12 +196,31 @@ namespace MapsExtended.Presentation
             }
 
             IsShowingMapScreen = true;
-            _mainParent.Find("MapBlock").gameObject.SetActive(false);
-            _mainParent.Find("EmptyBlock").gameObject.SetActive(false);
+            var mapBlock = _mainParent.Find("MapBlock");
+            var emptyBlock = _mainParent.Find("EmptyBlock");
+            if (mapBlock != null)
+            {
+                mapBlock.gameObject.SetActive(false);
+            }
+
+            if (emptyBlock != null)
+            {
+                emptyBlock.gameObject.SetActive(false);
+            }
+
             _mainParent.gameObject.SetActive(true);
             if (!_modes.Main.HasViewportStateFor(_mapView.CurrentMapDef))
             {
-                Canvas.ForceUpdateCanvases();
+                // A broken TextMeshPro elsewhere on the canvas throws from here.
+                // That used to abort the replacement and let the vanilla map show.
+                try
+                {
+                    Canvas.ForceUpdateCanvases();
+                }
+                catch (Exception e)
+                {
+                    Plugin.Log.LogWarning($"Map layout refresh skipped: {e.Message}");
+                }
             }
 
             RequestMode(MapDisplayMode.Main, true);

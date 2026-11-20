@@ -39,7 +39,8 @@ namespace MapsExtended.Hooks
                 Plugin.Log.LogError($"{e.Message}");
                 Plugin.Log.LogError($"{e.StackTrace}");
 
-                return true;
+                // Keep the vanilla map closed. Falling through draws it behind the inventory tabs.
+                return !Settings.ReplaceMapScreen.Value;
             }
         }
     }

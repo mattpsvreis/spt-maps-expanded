@@ -105,7 +105,7 @@ namespace MapsExtended.Core
 
                 mapDef.SelectionId = Path.GetRelativePath(Plugin.Path, absolutePath).Replace('\\', '/');
                 mapDef.IsAddon = addonName != null;
-                if (mapDef.IsAddon)
+                if (mapDef.IsAddon && mapDef.DisplayName.IndexOf(" by ", StringComparison.OrdinalIgnoreCase) < 0)
                 {
                     mapDef.DisplayName = $"{mapDef.DisplayName} ({addonName})";
                 }

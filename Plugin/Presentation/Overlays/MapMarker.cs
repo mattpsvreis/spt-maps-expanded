@@ -121,8 +121,9 @@ namespace MapsExtended.Presentation.Overlays
             set
             {
                 _color = value;
-                Image.color = value;
-                Label.color = value;
+                // Floor fade owns alpha. Status and faction updates only change the tint.
+                ApplyRgb(Image, value);
+                ApplyRgb(Label, value);
                 GetComponent<FactionMarkerTint>()?.NativeColourChanged(value);
             }
         }
@@ -293,6 +294,17 @@ namespace MapsExtended.Presentation.Overlays
         {
             Move(newPosition, callback);
             SetRotation(rotation);
+        }
+
+        private static void ApplyRgb(Graphic graphic, Color colour)
+        {
+            if (graphic == null)
+            {
+                return;
+            }
+
+            colour.a = graphic.color.a;
+            graphic.color = colour;
         }
 
         public void HandleNewLayerStatus(LayerStatus status)
