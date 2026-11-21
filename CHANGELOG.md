@@ -20,6 +20,7 @@ All notable changes to Maps Expanded are recorded here. Newer versions are at th
 - Game helpers, math, SVG/texture/UI helpers, defs, faction colours, catalog, and UI patches are rewritten.
 - Therapist paper-map items are gone. The inventory map requirement was already removed, so those items had no remaining use.
 - Updated default colours for teammate / Bear / USEC / boss arrows, airdrops, dropped bags, corpse markers, the BTR, Black Division, Remnant, ISB, and Detected chaosInsurgency / civilian.
+- LICENSE / NOTICE keep upstream MIT copyright for DynamicMaps / SPT-DynamicMaps and DynamicMaps Extended. Map-pack credits stay.
 
 ## 1.1.0 — 2026-11-20
 

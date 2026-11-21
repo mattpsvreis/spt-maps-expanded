@@ -11,18 +11,15 @@ Artwork and data packs → remain under the licences below.
 
 ---
 
-## Historical software lineage (no longer incorporated)
+## Upstream MIT software (see LICENSE / NOTICE)
 
-Earlier Maps Expanded releases adapted MIT software from:
-
-| Upstream | Historical role |
+| Upstream | Role in Maps Expanded |
 |---|---|
-| [SPT-DynamicMaps](https://github.com/acidphantasm/SPT-DynamicMaps) | In-raid / out-of-raid map UI and marker ideas |
-| [DynamicMaps Extended](https://github.com/black-hawk95/DynamicMaps-Extended) | Faction colours, Map Variants support, packaged custom map data |
+| [SPT-DynamicMaps](https://github.com/acidphantasm/SPT-DynamicMaps) | Inherited MIT lineage for map UI / markers / related ideas |
+| [DynamicMaps Extended](https://github.com/black-hawk95/DynamicMaps-Extended) | Inherited MIT lineage for faction colours, Map Variants support, packaged custom map data |
 
-As of 2.0.0 that adapted software has been replaced. Packaged map definitions and
-artwork from Extended and related sources still ship under the artwork licences
-below.
+Copyright lines for those projects stay in `LICENSE`. Packaged map definitions and
+artwork from Extended and related sources ship under the artwork licences below.
 
 ---
 
