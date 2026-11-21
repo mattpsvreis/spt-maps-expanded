@@ -220,9 +220,7 @@ namespace MapsExtended.Markers
             var imagePath = string.Empty;
             var color = Color.clear;
             
-            var intelLevel = GameUtils.GetIntelLevel();
-            
-            if (player.IsGroupedWithMainPlayer() && Settings.ShowFriendlyIntelLevel.Value <= intelLevel)
+            if (player.IsGroupedWithMainPlayer())
             {
                 category = FriendlyPlayerCategory;
                 imagePath = FriendlyPlayerImagePath;
@@ -230,19 +228,19 @@ namespace MapsExtended.Markers
             }
             // Bosses (including UNTAR leads via FactionColours) before NonVanillaBot —
             // custom bosses are usually role>195 and would otherwise lose star/boss visibility.
-            else if (player.IsTrackedBoss() && Settings.ShowBossIntelLevel.Value <= intelLevel)
+            else if (player.IsTrackedBoss())
             {
                 category = BossCategory;
                 imagePath = BossImagePath;
                 color = Settings.BossColor.Value;
             }
-            else if (player.IsNonVanillaBot() && Settings.ShowScavIntelLevel.Value <= intelLevel)
+            else if (player.IsNonVanillaBot())
             {
                 category = NonVanillaBotCategory;
                 imagePath = Settings.NonVanillaBotUseStar.Value ? StarImagePath : ArrowImagePath;
                 color = Settings.NonVanillaBotColor.Value;
             }
-            else if (player.IsPmc() && Settings.ShowPmcIntelLevel.Value <= intelLevel)
+            else if (player.IsPmc())
             {
                 category = EnemyPlayerCategory;
                 imagePath = EnemyPlayerImagePath;
@@ -251,7 +249,7 @@ namespace MapsExtended.Markers
                     : Settings.PmcUsecColor.Value;
                     
             }
-            else if (player.IsScav() && Settings.ShowScavIntelLevel.Value <= intelLevel)
+            else if (player.IsScav())
             {
                 category = ScavCategory;
                 imagePath = ScavImagePath;

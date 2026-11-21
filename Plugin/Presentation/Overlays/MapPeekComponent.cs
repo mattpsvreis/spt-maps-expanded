@@ -1,7 +1,6 @@
 using BepInEx.Configuration;
 using MapsExtended.Config;
 using MapsExtended.Core;
-using MapsExtended.Integration;
 using MapsExtended.Presentation;
 using UnityEngine;
 
@@ -46,7 +45,7 @@ namespace MapsExtended.Presentation.Overlays
                 return;
             }
             
-            if (!MapScreen.EnsureInRaidMapAvailable() || !GameUtils.ShouldShowMapInRaid())
+            if (!MapScreen.EnsureInRaidMapAvailable())
             {
                 WasMiniMapActive = false;
                 MapScreen.RequestMode(MapDisplayMode.Hidden, false);

@@ -3,7 +3,6 @@ using System.Reflection;
 using SPT.Reflection.Patching;
 using MapsExtended.Config;
 using MapsExtended.Core;
-using MapsExtended.Integration;
 using MapsExtended.Presentation;
 using EFT.UI.Map;
 using HarmonyLib;
@@ -22,7 +21,7 @@ namespace MapsExtended.Hooks
         {
             try
             {
-                if (!Settings.ReplaceMapScreen.Value || !GameUtils.ShouldShowMapInRaid())
+                if (!Settings.ReplaceMapScreen.Value)
                 {
                     // mod is disabled
                     Plugin.Instance.Map?.OnMapScreenClose();
@@ -57,7 +56,7 @@ namespace MapsExtended.Hooks
         {
             try
             {
-                if (!Settings.ReplaceMapScreen.Value || !GameUtils.ShouldShowMapInRaid())
+                if (!Settings.ReplaceMapScreen.Value)
                 {
                     // mod is disabled
                     return true;

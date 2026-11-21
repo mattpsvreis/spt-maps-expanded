@@ -67,20 +67,6 @@ namespace MapsExtended.Config
         
         #endregion
 
-        #region IntelCenter
-
-        private const string ProgressionTitle = "3. Progression";
-        public static ConfigEntry<bool> RequireMapInInventory;
-        public static ConfigEntry<int> ShowPmcIntelLevel;
-        public static ConfigEntry<int> ShowBossIntelLevel;
-        public static ConfigEntry<int> ShowScavIntelLevel;
-        public static ConfigEntry<int> ShowFriendlyIntelLevel;
-        public static ConfigEntry<int> ShowCorpseIntelLevel;
-        public static ConfigEntry<int> ShowAirdropIntelLevel;
-        public static ConfigEntry<int> ShowHiddenStashIntelLevel;
-        
-        #endregion
-        
         #region In Raid
 
         private const string InRaidTitle = "4. In-Raid";
@@ -512,83 +498,7 @@ namespace MapsExtended.Config
                     new ConfigurationManagerAttributes())));
 
             #endregion
-            
-            #region Progression
 
-            ConfigEntries.Add(RequireMapInInventory = config.Bind(
-                ProgressionTitle,
-                "Need a paper map in raid",
-                false,
-                new ConfigDescription(
-                    "During a raid, the map stays closed unless a paper map is in your inventory or rig.",
-                    null,
-                    new ConfigurationManagerAttributes())));
-
-            ConfigEntries.Add(ShowPmcIntelLevel = config.Bind(
-                ProgressionTitle,
-                "Intelligence Center level for PMCs",
-                0,
-                new ConfigDescription(
-                    "0 shows PMCs with no Intelligence Center. 1, 2, or 3 waits until the center is at least that level.",
-                    new AcceptableValueRange<int>(0, 3),
-                    new ConfigurationManagerAttributes())));
-
-            ConfigEntries.Add(ShowBossIntelLevel = config.Bind(
-                ProgressionTitle,
-                "Intelligence Center level for bosses",
-                0,
-                new ConfigDescription(
-                    "0 shows bosses with no Intelligence Center. 1, 2, or 3 waits until the center is at least that level.",
-                    new AcceptableValueRange<int>(0, 3),
-                    new ConfigurationManagerAttributes())));
-
-            ConfigEntries.Add(ShowScavIntelLevel = config.Bind(
-                ProgressionTitle,
-                "Intelligence Center level for scavs",
-                0,
-                new ConfigDescription(
-                    "0 shows scavs with no Intelligence Center. 1, 2, or 3 waits until the center is at least that level.",
-                    new AcceptableValueRange<int>(0, 3),
-                    new ConfigurationManagerAttributes())));
-
-            ConfigEntries.Add(ShowFriendlyIntelLevel = config.Bind(
-                ProgressionTitle,
-                "Intelligence Center level for teammates",
-                0,
-                new ConfigDescription(
-                    "0 shows teammates with no Intelligence Center. 1, 2, or 3 waits until the center is at least that level.",
-                    new AcceptableValueRange<int>(0, 3),
-                    new ConfigurationManagerAttributes())));
-
-            ConfigEntries.Add(ShowCorpseIntelLevel = config.Bind(
-                ProgressionTitle,
-                "Intelligence Center level for bodies",
-                0,
-                new ConfigDescription(
-                    "0 shows bodies with no Intelligence Center. 1, 2, or 3 waits until the center is at least that level.",
-                    new AcceptableValueRange<int>(0, 3),
-                    new ConfigurationManagerAttributes())));
-
-            ConfigEntries.Add(ShowAirdropIntelLevel = config.Bind(
-                ProgressionTitle,
-                "Intelligence Center level for airdrops",
-                0,
-                new ConfigDescription(
-                    "0 shows airdrops with no Intelligence Center. 1, 2, or 3 waits until the center is at least that level.",
-                    new AcceptableValueRange<int>(0, 3),
-                    new ConfigurationManagerAttributes())));
-
-            ConfigEntries.Add(ShowHiddenStashIntelLevel = config.Bind(
-                ProgressionTitle,
-                "Intelligence Center level for hidden stashes",
-                0,
-                new ConfigDescription(
-                    "0 shows hidden stashes with no Intelligence Center. 1, 2, or 3 waits until the center is at least that level.",
-                    new AcceptableValueRange<int>(0, 3),
-                    new ConfigurationManagerAttributes())));
-
-            #endregion
-            
             #region In Raid
 
             ConfigEntries.Add(AutoSelectLevel = config.Bind(

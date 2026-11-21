@@ -62,10 +62,6 @@ public override void OnRaidEnd(MapView map)
         if (_stashMarkers.ContainsKey(stash)) 
             return;
         
-        var intelLevel = GameUtils.GetIntelLevel();
-        if (Settings.ShowHiddenStashIntelLevel.Value > intelLevel) 
-            return;
-
         var markerDef = new MapMarkerDef
         {
             Category = "Hidden Stash",

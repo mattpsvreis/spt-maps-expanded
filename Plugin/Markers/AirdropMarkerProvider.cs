@@ -88,11 +88,6 @@ namespace MapsExtended.Markers
                 return;
             }
 
-            var intelLevel = GameUtils.GetIntelLevel();
-
-            if (Settings.ShowAirdropIntelLevel.Value > intelLevel) 
-                return;
-            
             var markerDef = new MapMarkerDef
             {
                 Category = AirdropCategory,

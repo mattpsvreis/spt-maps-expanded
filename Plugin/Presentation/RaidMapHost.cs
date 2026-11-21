@@ -142,7 +142,7 @@ namespace MapsExtended.Presentation
                 return;
             }
 
-            if (GameUtils.IsInRaid() && (!EnsureInRaidMapAvailable() || !GameUtils.ShouldShowMapInRaid()))
+            if (GameUtils.IsInRaid() && !EnsureInRaidMapAvailable())
             {
                 RequestMode(MapDisplayMode.Hidden, false);
                 return;
@@ -309,7 +309,7 @@ namespace MapsExtended.Presentation
                     _catalog.LoadAll();
                 }
 
-                if (!EnsureInRaidMapAvailable() || !GameUtils.ShouldShowMapInRaid())
+                if (!EnsureInRaidMapAvailable())
                 {
                     HideDisplay();
                     return;

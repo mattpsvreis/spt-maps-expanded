@@ -4,7 +4,6 @@ using System.Linq;
 using System.Reflection;
 using SPT.Reflection.Utils;
 using Comfort.Common;
-using MapsExtended.Config;
 using MapsExtended.Integration;
 using EFT;
 using EFT.InventoryLogic;
@@ -61,23 +60,6 @@ namespace MapsExtended.Integration
             WildSpawnType.ravangeZryachiyEvent
         ];
 
-        private static readonly Dictionary<string, string> MapLookUp = new()
-        {
-            { "factory4_day", "574eb85c245977648157eec3" },
-            { "factory4_night", "574eb85c245977648157eec3" },
-            { "Woods", "5900b89686f7744e704a8747" },
-            { "bigmap", "5798a2832459774b53341029" },
-            { "Interchange", "5be4038986f774527d3fae60" },
-            { "RezervBase", "6738034a9713b5f42b4a8b78" },
-            { "Shoreline", "5a8036fb86f77407252ddc02" },
-            { "laboratory", "6738034e9d22459ad7cd1b81" },
-            { "Lighthouse", "6738035350b24a4ae4a57997" },
-            { "TarkovStreets", "673803448cb3819668d77b1b" },
-            { "Sandbox", "6738033eb7305d3bdafe9518"},
-            { "Sandbox_high", "6738033eb7305d3bdafe9518"},
-            { "Labyrinth", "68f1ad32317cc52f4c0b6fae" }
-        };
-        
         public static bool IsInRaid()
         {
             var game = Singleton<AbstractGame>.Instance;
@@ -225,34 +207,5 @@ namespace MapsExtended.Integration
             return player.Profile.Info.MemberCategory == EMemberCategory.UnitTest;
         }
 
-        public static int GetIntelLevel()
-        {
-            return PlayerProfile.Hideout.Areas
-                .SingleOrDefault(a => a.AreaType == EAreaType.IntelligenceCenter)?.Level ?? 0;
-        }
-
-        public static bool ShouldShowMapInRaid()
-        {
-            if (!Settings.RequireMapInInventory.Value || !IsInRaid()) return true;
-            
-            var player = GetMainPlayer();
-            if (player == null)
-            {
-                return false;
-            }
-            var currentLocation = player.Location;
-
-            if (!MapLookUp.TryGetValue(currentLocation, out var id))
-            {
-                Plugin.Log.LogWarning($"Could not find map id for location {currentLocation} is this a new location?");
-                return true;
-            }
-                    
-            var isMapInInventory = player.Inventory.Equipment
-                .GetAllItems()
-                .Any(m => m.TemplateId == id);
-            
-            return isMapInInventory;
-        }
     }
 }

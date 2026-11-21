@@ -20,11 +20,13 @@ All notable changes to Maps Expanded are recorded here. Newer versions are at th
 - Hovering a quest marker shows the objective, using the same description as the quest log. The quest name stays under the icon. Several objectives on the same spot are listed together.
 - Hovering an extract that is not open yet shows what it still needs. That is the code-word note for a secret extract, the switch that has to be thrown, a payment, or another requirement taken from the extract itself. The note clears once the extract can be used.
 
-Boss corpses still share **Boss bodies**. With Faction tints turned on, a faction tint still replaces the Bear, USEC, scav, boss, and friendly colours for that bot.
+Boss corpses still share **Boss bodies**. With Faction colours turned on, a faction colour still replaces the Bear, USEC, scav, boss, and friendly colours for that bot.
 
 ### Removed
 
-- Wishlist markers. Loose items, items still inside containers, the Intelligence Center gate, and both colour settings are gone.
+- Wishlist markers. Loose items, items still inside containers, and both colour settings are gone.
+- The paper-map requirement for opening the map in a raid.
+- Intelligence Center level gates for PMCs, bosses, scavs, teammates, bodies, airdrops, and hidden stashes.
 
 ## 1.0.0 — 2026-11-20
 

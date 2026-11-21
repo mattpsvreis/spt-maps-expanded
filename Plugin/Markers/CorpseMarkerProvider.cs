@@ -219,11 +219,6 @@ namespace MapsExtended.Markers
                 return;
             }
 
-            var intelLevel = GameUtils.GetIntelLevel();
-            
-            if (Settings.ShowCorpseIntelLevel.Value > intelLevel) 
-                return;
-            
             // set category and color
             var category = OtherCorpseCategory;
             var imagePath = OtherCorpseImagePath;

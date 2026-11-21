@@ -23,10 +23,6 @@
 - **Corpses** — friendly, player-killed, boss, and other (each toggleable)
 - Optional marker icon packs via `Addons/*/Markers` (other modders are welcome to add their own stuff as addons!)
 
-### Progression / immersion
-- Optional “require paper map in inventory” to open the map in raid
-- Intel Center level gates for PMCs, bosses, scavs, friendlies, corpses, airdrops, and hidden stashes
-
 ### Faction colours
 - Tint bot / player markers by faction when Custom Faction Colours is enabled
 - Built-in groups such as Black Division, UNTAR, RUAF, Remnants, ISB, White Tusks
@@ -35,8 +31,8 @@
 
 ### Bundled map packs (`Addons/Extended`)
 - **Satellite** and **Abstract** styles for stock maps (coverage varies by location)
-- **Factory Classic** pack for Classic Maps / Factory variants
-- **Manimal** Interchange / Labs-oriented packs
+- **Factory Classic** pack for Factory Classic by LennoxP90
+- **Manimal** Interchange / Labs backports oriented packs
 - **Icebreaker** (and RE3MR) packs when that map is installed
 - **Per-location preference in F12:** Satellite / Abstract / Automatic
 - **BONUS:** Other modders are welcome to add their own map packs via addons! Just follow the structure already exemplified in this mod.
@@ -61,7 +57,7 @@
 
 ## F12 config
 
-Everything above is toggled in Configuration Manager under Maps Expanded: Controls, What to show, Intel and paper map, Opening the map in raid, Corner map, Colours, Extra mods, Map style, and Faction colours.
+Everything above is toggled in Configuration Manager under Maps Expanded: General, Markers, In-Raid, Minimap, Colours, Extra mods, Map styles, and Faction Colours.
 
 ## Licensing
 
