@@ -39,8 +39,8 @@ SOFTWARE.
 Shebuka's License is distributed within each map's SVG folder where required
 License link: https://github.com/the-hideout/tarkov-dev-svg-maps/blob/main/LICENSE.md
 
-If the map has been updated or modified by myself (acidphantasm) the file name for the LICENSE will reflect that I made changes.
+If the map has been updated or modified by acidphantasm the file name for the LICENSE will reflect that he made changes.
 In no way does this indicate those changes were made or endorsed by the original author (Shebuka).
 This is to abide by the license terms of Shebuka's maps.
 
-If the map has been created, and maintained by myself (acidphantasm) there will be a relevant license labeled acidphantasm-LICENSE.md
+If the map has been created, and maintained by acidphantasm there will be a relevant license labeled acidphantasm-LICENSE.md

@@ -28,8 +28,10 @@ namespace MapsExtended.Integration
 
         private static List<TriggerWithId> _triggersWithIds;
         private static List<LootItem> _questItems;
+        private static readonly Dictionary<string, List<Vector3>> _questItemSpawns = new(StringComparer.Ordinal);
         private static Dictionary<string, Dictionary<string, List<float[]>>> _zoneCache;
         private static bool _zoneCacheLoaded;
+        private const float VisitHintRadius = 25f;
 
         // Optional out-of-raid context (current map's locations + extract markers).
         private static IReadOnlyList<string> _oorLocations;
@@ -53,6 +55,8 @@ namespace MapsExtended.Integration
                     .GetValue<List<LootItem>>()
                     .Where(i => i.Item.QuestItem).ToList();
             }
+
+            RememberQuestItemSpawns();
         }
 
         internal static void DiscardQuestData()
@@ -68,6 +72,8 @@ namespace MapsExtended.Integration
                 _questItems.Clear();
                 _questItems = null;
             }
+
+            _questItemSpawns.Clear();
         }
 
         internal static IEnumerable<MapMarkerDef> GetMarkerDefsForPlayer(Player player)
@@ -126,9 +132,15 @@ namespace MapsExtended.Integration
             var markers = new List<MapMarkerDef>();
 
             var conditions = GetIncompleteQuestConditions(player, quest);
+            var completedFinds = GetCompletedFindItemTargets(player, quest);
             var questName = quest.Template.NameLocaleKey.BsgLocalized();
             foreach (var condition in conditions)
             {
+                if (IsLeftoverVisitHint(condition, completedFinds))
+                {
+                    continue;
+                }
+
                 var conditionDescription = DescribeCondition(condition);
                 var positions = GetPositionsForCondition(condition, questName, conditionDescription);
                 foreach (var position in positions)
@@ -421,33 +433,191 @@ namespace MapsExtended.Integration
 
         private static bool IsConditionCompleted(Player player, QuestDataClass questData, Condition condition)
         {
-            // CompletedConditions is inaccurate (it doesn't reset when some quests do on death)
-            // and also does not contain optional objectives, need to recheck if something is in there
-            if (condition.IsNecessary && !questData.CompletedConditions.Contains(condition.id))
+            if (condition == null || questData == null)
             {
                 return false;
             }
 
-            // Out of raid (or no live quest controller): fall back to CompletedConditions only.
-            if (player?.QuestController == null)
+            var live = player?.QuestController?.Quests?.GetConditional(questData.Id);
+            if (live == null)
             {
-                return questData.CompletedConditions != null
+                // Out of raid there is no progress checker. Optional objectives are not stored here.
+                return condition.IsNecessary
+                       && questData.CompletedConditions != null
                        && questData.CompletedConditions.Contains(condition.id);
             }
 
-            var quests = player.QuestController.Quests;
-            if (quests == null)
+            if (live.IsDone())
+            {
+                return true;
+            }
+
+            // The subtask notification uses the live counter. IsConditionDone also requires every
+            // necessary child, and those children often have no progress of their own, so a finished
+            // objective still looks open. CompletedConditions can also keep an id after a quest
+            // resets on death, so a live counter wins over that set.
+            if (live.ProgressCheckers != null
+                && live.ProgressCheckers.TryGetValue(condition, out var checker)
+                && checker != null
+                && checker.HasGetter())
+            {
+                return condition.compareMethod.Compare(checker.CurrentValue, condition.value);
+            }
+
+            return live.CompletedConditions != null && live.CompletedConditions.Contains(condition.id);
+        }
+
+        private static void RememberQuestItemSpawns()
+        {
+            if (_questItems == null)
+            {
+                return;
+            }
+
+            foreach (var loot in _questItems)
+            {
+                if (loot == null)
+                {
+                    continue;
+                }
+
+                var key = loot.TemplateId.ToString();
+                if (string.IsNullOrEmpty(key))
+                {
+                    continue;
+                }
+
+                var position = MathUtils.ConvertToMapPosition(loot.transform.position);
+                if (!_questItemSpawns.TryGetValue(key, out var spawns))
+                {
+                    spawns = [];
+                    _questItemSpawns[key] = spawns;
+                }
+
+                if (spawns.Any(existing => Near(existing, position, 1f)))
+                {
+                    continue;
+                }
+
+                spawns.Add(position);
+            }
+        }
+
+        private static List<string> GetCompletedFindItemTargets(Player player, QuestDataClass quest)
+        {
+            var targets = new List<string>();
+            if (quest?.Template?.Conditions == null
+                || !quest.Template.Conditions.TryGetValue(EQuestStatus.AvailableForFinish, out var conditions)
+                || conditions == null)
+            {
+                return targets;
+            }
+
+            foreach (var condition in conditions)
+            {
+                if (condition is not ConditionFindItem find || find.target == null)
+                {
+                    continue;
+                }
+
+                if (!IsConditionCompleted(player, quest, find))
+                {
+                    continue;
+                }
+
+                foreach (var target in find.target)
+                {
+                    if (!string.IsNullOrEmpty(target) && !targets.Contains(target))
+                    {
+                        targets.Add(target);
+                    }
+                }
+            }
+
+            return targets;
+        }
+
+        /// <summary>
+        /// A "go here" visit sitting on a quest item that has already been picked up.
+        /// The item marker leaves with the item, and this hint would stay on the same spot.
+        /// </summary>
+        private static bool IsLeftoverVisitHint(Condition condition, List<string> completedFindTargets)
+        {
+            if (completedFindTargets.Count == 0 || !TryGetVisitZones(condition, out var zoneIds))
             {
                 return false;
             }
 
-            var quest = quests.GetConditional(questData.Id);
-            if (quest == null)
+            foreach (var zoneId in zoneIds)
+            {
+                foreach (var zonePos in GetPositionsForZoneId(zoneId, null, null))
+                {
+                    foreach (var target in completedFindTargets)
+                    {
+                        if (!_questItemSpawns.TryGetValue(target, out var spawns))
+                        {
+                            continue;
+                        }
+
+                        if (spawns.Any(spawn => Near(spawn, zonePos, VisitHintRadius)))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            // Map opened after the pickup, so the item's spawn was never seen.
+            // The visit hint is only there to point at that item.
+            if (completedFindTargets.Any(target =>
+                    _questItemSpawns.TryGetValue(target, out var spawns) && spawns.Count > 0))
             {
                 return false;
             }
 
-            return quest.IsConditionDone(condition);
+            return _questItems == null || !_questItems.Any(loot =>
+                loot != null && completedFindTargets.Contains(loot.TemplateId.ToString()));
+        }
+
+        private static bool TryGetVisitZones(Condition condition, out List<string> zoneIds)
+        {
+            zoneIds = null;
+            if (condition is not ConditionCounterCreator counter)
+            {
+                return false;
+            }
+
+            var inner = counter._templateConditions?.Conditions;
+            if (inner == null)
+            {
+                return false;
+            }
+
+            var zones = new List<string>();
+            foreach (var child in inner)
+            {
+                if (child is not ConditionVisitPlace visit || string.IsNullOrEmpty(visit.target))
+                {
+                    return false;
+                }
+
+                zones.Add(visit.target);
+            }
+
+            if (zones.Count == 0)
+            {
+                return false;
+            }
+
+            zoneIds = zones;
+            return true;
+        }
+
+        private static bool Near(Vector3 a, Vector3 b, float radius)
+        {
+            var dx = a.x - b.x;
+            var dy = a.y - b.y;
+            return dx * dx + dy * dy <= radius * radius;
         }
 
         private static void PersistZoneCacheForCurrentLocation()
