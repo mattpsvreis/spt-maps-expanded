@@ -130,13 +130,13 @@
     <Copy SourceFiles="@(ManagedDlls)" DestinationFolder="$(TarkovDir)\%(RecursiveDir)" />
     <Copy SourceFiles="@(ServerComponents)" DestinationFolder="$(TarkovDir)SPT_Runtime\user\mods\MapsExpanded\%(RecursiveDir)" />
 
-    <!-- Creates a release zip file -->
-    <RemoveDir Directories="$(ProjectDir)release" />
-    <Copy SourceFiles="@(OutputDLL);@(Resources);@(License)" DestinationFolder="$(ProjectDir)release\MapsExpanded\BepInEx\plugins\MapsExpanded\%(RecursiveDir)" />
-    <Copy SourceFiles="@(Addons)" DestinationFolder="$(ProjectDir)release\MapsExpanded\BepInEx\plugins\MapsExpanded\Addons\%(RecursiveDir)" />
-    <Copy SourceFiles="@(ManagedDlls)" DestinationFolder="$(ProjectDir)release\MapsExpanded\EscapeFromTarkov_Data\%(RecursiveDir)" />
-    <Copy SourceFiles="@(ServerComponents)" DestinationFolder="$(ProjectDir)release\MapsExpanded\SPT_Runtime\user\mods\MapsExpanded\%(RecursiveDir)" />
-    <ZipDirectory SourceDirectory="$(ProjectDir)release\MapsExpanded\" DestinationFile="$(ProjectDir)release\MapsExpanded-$(Version).zip" />
+    <!-- Creates a release zip file in the repository release folder -->
+    <RemoveDir Directories="$(ProjectDir)..\release" />
+    <Copy SourceFiles="@(OutputDLL);@(Resources);@(License)" DestinationFolder="$(ProjectDir)..\release\MapsExpanded\BepInEx\plugins\MapsExpanded\%(RecursiveDir)" />
+    <Copy SourceFiles="@(Addons)" DestinationFolder="$(ProjectDir)..\release\MapsExpanded\BepInEx\plugins\MapsExpanded\Addons\%(RecursiveDir)" />
+    <Copy SourceFiles="@(ManagedDlls)" DestinationFolder="$(ProjectDir)..\release\MapsExpanded\EscapeFromTarkov_Data\%(RecursiveDir)" />
+    <Copy SourceFiles="@(ServerComponents)" DestinationFolder="$(ProjectDir)..\release\MapsExpanded\SPT_Runtime\user\mods\MapsExpanded\%(RecursiveDir)" />
+    <ZipDirectory SourceDirectory="$(ProjectDir)..\release\MapsExpanded\" DestinationFile="$(ProjectDir)..\release\MapsExpanded-$(Version).zip" />
   </Target>
 
 </Project>
