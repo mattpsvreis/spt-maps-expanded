@@ -2,12 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Comfort.Common;
-using MapsExtended.Core;
-using MapsExtended.Hooks;
-using MapsExtended.Integration;
 using EFT;
 using EFT.Interactive;
-using EFT.Interactive.SecretExfiltrations;
+using MapsExtended.Integration;
 using Newtonsoft.Json;
 using UnityEngine;
 
@@ -23,7 +20,7 @@ namespace MapsExtended.Core
 
         private const string TransitCategory = "Transit";
         private const string TransitImagePath = "Makers/transit.png";
-        
+
         private static readonly Color ExtractScavColor = Color.Lerp(Color.yellow, Color.red, 0.5f);
         private static readonly Color TransitColor = Color.Lerp(Color.yellow, Color.red, 0.6f);
         private static readonly Color SecretColor = new Color(0.1f, 0.6f, 0.6f);
@@ -40,167 +37,138 @@ namespace MapsExtended.Core
 
         public static void DumpExtracts()
         {
-            var gameWorld = Singleton<GameWorld>.Instance;
-            var scavExfils = gameWorld.ExfiltrationController.ScavExfiltrationPoints;
-            var pmcExfils = gameWorld.ExfiltrationController.ExfiltrationPoints;
-            var secretExfils = gameWorld.ExfiltrationController.SecretExfiltrationPoints;
+            var world = Singleton<GameWorld>.Instance;
+            var controller = world.ExfiltrationController;
+            var markers = new List<MapMarkerDef>();
 
-            var dump = new List<MapMarkerDef>();
+            AppendExfils(markers, controller.ScavExfiltrationPoints, ExtractScavColor, ExtractCategory, ExtractImagePath);
+            AppendExfils(markers, controller.ExfiltrationPoints, ExtractPmcColor, ExtractCategory, ExtractImagePath);
+            AppendTransits(markers);
+            AppendExfils(markers, controller.SecretExfiltrationPoints, SecretColor, SecretCategory, SecretImagePath);
 
-            if (scavExfils is not null)
-            {
-
-                foreach (var scavExfil in scavExfils)
-                {
-                    var dumped = new MapMarkerDef
-                    {
-                        Category = ExtractCategory,
-                        ShowInRaid = false,
-                        ImagePath = ExtractImagePath,
-                        Text = scavExfil.Settings.Name.BsgLocalized(),
-                        Position = MathUtils.ConvertToMapPosition(scavExfil.transform),
-                        Color = ExtractScavColor
-                    };
-
-                    dump.Add(dumped);
-                }
-            }
-
-            foreach (var pmcExfil in pmcExfils)
-            {
-                var dumped = new MapMarkerDef
-                {
-                    Category = ExtractCategory,
-                    ShowInRaid = false,
-                    ImagePath = ExtractImagePath,
-                    Text = pmcExfil.Settings.Name.BsgLocalized(),
-                    Position = MathUtils.ConvertToMapPosition(pmcExfil.transform),
-                    Color = ExtractPmcColor
-                };
-
-                dump.Add(dumped);
-            }
-
-            foreach (var transit in LocationScene.GetAllObjects<TransitPoint>(true))
-            {
-                var dumped = new MapMarkerDef
-                {
-                    Category = TransitCategory,
-                    ShowInRaid = false,
-                    ImagePath = TransitImagePath,
-                    Text = transit.parameters.description.BsgLocalized(),
-                    Position = MathUtils.ConvertToMapPosition(transit.transform),
-                    Color = TransitColor
-                };
-                
-                dump.Add(dumped);
-            }
-
-            if (secretExfils is not null)
-            {
-                foreach (var secret in secretExfils)
-                {
-                    var dumped = new MapMarkerDef
-                    {
-                        Category = SecretCategory,
-                        ShowInRaid = false,
-                        ImagePath = SecretImagePath,
-                        Text = secret.Settings.Name.BsgLocalized(),
-                        Position = MathUtils.ConvertToMapPosition(secret.transform),
-                        Color = SecretColor
-                    };
-
-                    dump.Add(dumped);
-                }
-            }
-
-            var mapName = GameUtils.GetCurrentMapInternalName();
-            var dumpString = JsonConvert.SerializeObject(dump, Formatting.Indented);
-            File.WriteAllText(Path.Combine(Plugin.Path, $"{mapName}-extracts.json"), dumpString);
-
+            WriteDump(markers, "extracts");
             Plugin.Log.LogInfo("Dumped extracts");
         }
 
         public static void DumpSwitches()
         {
-            var switches = GameObject.FindObjectsOfType<Switch>();
-            var dump = new List<MapMarkerDef>();
-
-            foreach (var @switch in switches)
+            var markers = new List<MapMarkerDef>();
+            foreach (var lever in GameObject.FindObjectsOfType<Switch>())
             {
-                if (!@switch.Operatable || !@switch.HasAuthority)
+                if (!lever.Operatable || !lever.HasAuthority)
                 {
                     continue;
                 }
 
-                var dumped = new MapMarkerDef
-                {
-                    Category = SwitchCategory,
-                    ImagePath = SwitchImagePath,
-                    Text = @switch.name,
-                    Position = MathUtils.ConvertToMapPosition(@switch.transform)
-                };
-
-                dump.Add(dumped);
+                markers.Add(Make(SwitchCategory, SwitchImagePath, lever.name, lever.transform));
             }
 
-            var mapName = GameUtils.GetCurrentMapInternalName();
-            var dumpString = JsonConvert.SerializeObject(dump, Formatting.Indented);
-            File.WriteAllText(Path.Combine(Plugin.Path, $"{mapName}-switches.json"), dumpString);
-
+            WriteDump(markers, "switches");
             Plugin.Log.LogInfo("Dumped switches");
         }
 
         public static void DumpLocks()
         {
-            var objects = GameObject.FindObjectsOfType<WorldInteractiveObject>();
-            var dump = new List<MapMarkerDef>();
-            var i = 1;
-
-            foreach (var locked in objects)
+            var markers = new List<MapMarkerDef>();
+            var doorNumber = 1;
+            foreach (var interactive in GameObject.FindObjectsOfType<WorldInteractiveObject>())
             {
-                if (string.IsNullOrEmpty(locked.KeyId) || !locked.Operatable)
+                if (string.IsNullOrEmpty(interactive.KeyId) || !interactive.Operatable)
                 {
                     continue;
                 }
 
-                var isSafe = locked is LootableContainer && IsSafeName(locked.name);
-                var isKeycard = !isSafe && IsKeycardKey(locked.KeyId);
-                var dumped = new MapMarkerDef
+                var safe = interactive is LootableContainer && LooksLikeSafe(interactive.name);
+                var keycard = !safe && KeyNameMentionsCard(interactive.KeyId);
+                var image = LockedDoorImagePath;
+                if (safe)
                 {
-                    Text = isSafe ? locked.name : $"door {i++}",
-                    Category = LockedDoorCategory,
-                    ImagePath = isSafe ? LockedSafeImagePath : isKeycard ? LockedKeycardImagePath : LockedDoorImagePath,
-                    Position = MathUtils.ConvertToMapPosition(locked.transform),
-                    AssociatedItemId = locked.KeyId,
-                    Color = LockedDoorColor
-                };
+                    image = LockedSafeImagePath;
+                }
+                else if (keycard)
+                {
+                    image = LockedKeycardImagePath;
+                }
 
-                dump.Add(dumped);
+                var label = interactive.name;
+                if (!safe)
+                {
+                    label = "door " + doorNumber;
+                    doorNumber++;
+                }
+
+                var marker = Make(LockedDoorCategory, image, label, interactive.transform);
+                marker.AssociatedItemId = interactive.KeyId;
+                marker.Color = LockedDoorColor;
+                markers.Add(marker);
             }
 
-            var mapName = GameUtils.GetCurrentMapInternalName();
-            var dumpString = JsonConvert.SerializeObject(dump, Formatting.Indented);
-            File.WriteAllText(Path.Combine(Plugin.Path, $"{mapName}-locked.json"), dumpString);
-
+            WriteDump(markers, "locked");
             Plugin.Log.LogInfo("Dumped locks");
         }
 
-        private static bool IsSafeName(string name)
+        private static void AppendExfils(List<MapMarkerDef> markers, IEnumerable<ExfiltrationPoint> points, Color color, string category, string image)
+        {
+            if (points == null)
+            {
+                return;
+            }
+
+            foreach (var point in points)
+            {
+                var marker = Make(category, image, point.Settings.Name.BsgLocalized(), point.transform);
+                marker.ShowInRaid = false;
+                marker.Color = color;
+                markers.Add(marker);
+            }
+        }
+
+        private static void AppendTransits(List<MapMarkerDef> markers)
+        {
+            foreach (var transit in LocationScene.GetAllObjects<TransitPoint>(true))
+            {
+                var marker = Make(TransitCategory, TransitImagePath, transit.parameters.description.BsgLocalized(), transit.transform);
+                marker.ShowInRaid = false;
+                marker.Color = TransitColor;
+                markers.Add(marker);
+            }
+        }
+
+        private static MapMarkerDef Make(string category, string image, string text, Transform transform)
+        {
+            return new MapMarkerDef
+            {
+                Category = category,
+                ImagePath = image,
+                Text = text,
+                Position = MathUtils.ConvertToMapPosition(transform)
+            };
+        }
+
+        private static void WriteDump(List<MapMarkerDef> markers, string suffix)
+        {
+            var mapName = GameUtils.GetCurrentMapInternalName();
+            var json = JsonConvert.SerializeObject(markers, Formatting.Indented);
+            var file = Path.Combine(Plugin.Path, mapName + "-" + suffix + ".json");
+            File.WriteAllText(file, json);
+        }
+
+        private static bool LooksLikeSafe(string name)
         {
             if (string.IsNullOrEmpty(name))
             {
                 return false;
             }
 
-            return name.IndexOf("safe", StringComparison.OrdinalIgnoreCase) >= 0
-                   && name.IndexOf("cash", StringComparison.OrdinalIgnoreCase) < 0;
+            var hasSafe = name.IndexOf("safe", StringComparison.OrdinalIgnoreCase) >= 0;
+            var hasCash = name.IndexOf("cash", StringComparison.OrdinalIgnoreCase) >= 0;
+            return hasSafe && !hasCash;
         }
 
-        private static bool IsKeycardKey(string keyId)
+        private static bool KeyNameMentionsCard(string keyId)
         {
-            var name = (keyId + " Name").BsgLocalized();
-            return name.IndexOf("keycard", StringComparison.OrdinalIgnoreCase) >= 0;
+            var localized = (keyId + " Name").BsgLocalized();
+            return localized.IndexOf("keycard", StringComparison.OrdinalIgnoreCase) >= 0;
         }
     }
 }

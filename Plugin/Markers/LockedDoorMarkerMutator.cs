@@ -3,165 +3,169 @@ using System.Collections.Generic;
 using System.IO;
 using MapsExtended.Config;
 using MapsExtended.Core;
-using MapsExtended.Presentation.Overlays;
 using MapsExtended.Integration;
-using MapsExtended.Presentation;
+using MapsExtended.Presentation.Overlays;
 using EFT.InventoryLogic;
 
 namespace MapsExtended.Markers
 {
     using MapMarker = Presentation.Overlays.MapMarker;
 
-    public class LockedDoorMarkerMutator : MarkerProviderBase
+    public class LockedDoorMarkerMutator : PinSource
     {
-        private static readonly string DoorWithKeyPath = Path.Combine(Plugin.Path, "Markers/door_with_key.png");
-        private static readonly string DoorWithLockPath = Path.Combine(Plugin.Path, "Markers/door_with_lock.png");
-        private static readonly string CarKeyPath = Path.Combine(Plugin.Path, "Markers/car_key.png");
-        private static readonly string CarDoorPath = Path.Combine(Plugin.Path, "Markers/car_door.png");
-        private static readonly string SafeWithKeyPath = Path.Combine(Plugin.Path, "Markers/safe_with_key.png");
-        private static readonly string SafeWithLockPath = Path.Combine(Plugin.Path, "Markers/safe_with_lock.png");
-        private static readonly string KeycardWithCardPath = Path.Combine(Plugin.Path, "Markers/door_keycard_with_keycard.png");
-        private static readonly string KeycardWithLockPath = Path.Combine(Plugin.Path, "Markers/door_keycard_with_lock.png");
+        private static readonly string DoorWithKey = Path.Combine(Plugin.Path, "Markers/door_with_key.png");
+        private static readonly string DoorWithLock = Path.Combine(Plugin.Path, "Markers/door_with_lock.png");
+        private static readonly string CarKey = Path.Combine(Plugin.Path, "Markers/car_key.png");
+        private static readonly string CarDoor = Path.Combine(Plugin.Path, "Markers/car_door.png");
+        private static readonly string SafeWithKey = Path.Combine(Plugin.Path, "Markers/safe_with_key.png");
+        private static readonly string SafeWithLock = Path.Combine(Plugin.Path, "Markers/safe_with_lock.png");
+        private static readonly string KeycardWithCard = Path.Combine(Plugin.Path, "Markers/door_keycard_with_keycard.png");
+        private static readonly string KeycardWithLock = Path.Combine(Plugin.Path, "Markers/door_keycard_with_lock.png");
 
-        private readonly Dictionary<string, List<MapMarker>> _doorMarkersByKey = new(StringComparer.Ordinal);
-        private readonly HashSet<MapMarker> _carDoorMarkers = [];
-        private readonly HashSet<MapMarker> _safeMarkers = [];
-        private readonly HashSet<MapMarker> _keycardMarkers = [];
-        private readonly Dictionary<string, int> _keyCounts = new(StringComparer.Ordinal);
-        private readonly HashSet<Item> _trackedKeys = [];
-        private InventoryController _inventoryController;
+        private readonly Dictionary<string, List<MapMarker>> _doors = new(StringComparer.Ordinal);
+        private readonly HashSet<MapMarker> _cars = [];
+        private readonly HashSet<MapMarker> _safes = [];
+        private readonly HashSet<MapMarker> _keycards = [];
+        private readonly Dictionary<string, int> _counts = new(StringComparer.Ordinal);
+        private readonly HashSet<Item> _tracked = [];
+        private InventoryController _inventory;
         private InventoryEquipment _equipment;
 
-        public override void OnShowInRaid(MapView map)
+        protected override void ShowInRaid(MapCanvas map)
         {
-            StopTracking();
-
+            Stop();
             var player = GameUtils.GetMainPlayer();
             if (player == null)
+            {
                 return;
+            }
 
             _equipment = player.Inventory.Equipment;
-            _inventoryController = player.InventoryController;
-
+            _inventory = player.InventoryController;
             foreach (var marker in map.GetMapMarkersByCategory("LockedDoor"))
             {
                 if (string.IsNullOrWhiteSpace(marker.AssociatedItemId))
-                    continue;
-
-                RememberSpecialIcon(marker);
-
-                if (!_doorMarkersByKey.TryGetValue(marker.AssociatedItemId, out var markers))
                 {
-                    markers = [];
-                    _doorMarkersByKey[marker.AssociatedItemId] = markers;
+                    continue;
                 }
 
-                markers.Add(marker);
+                Remember(marker);
+                if (!_doors.TryGetValue(marker.AssociatedItemId, out var list))
+                {
+                    list = [];
+                    _doors[marker.AssociatedItemId] = list;
+                }
+
+                list.Add(marker);
             }
 
-            if (_doorMarkersByKey.Count == 0)
+            if (_doors.Count == 0)
+            {
                 return;
+            }
 
             foreach (var item in _equipment.GetAllItems())
             {
-                TrackKey(item);
+                Track(item);
             }
 
-            foreach (var keyId in _doorMarkersByKey.Keys)
+            foreach (var keyId in _doors.Keys)
             {
-                UpdateDoors(keyId);
+                Paint(keyId);
             }
 
-            if (_inventoryController == null)
+            if (_inventory == null)
+            {
                 return;
+            }
 
-            _inventoryController.AddItemEvent += OnItemAdded;
-            _inventoryController.RemoveItemEvent += OnItemRemoved;
+            _inventory.AddItemEvent += OnAdded;
+            _inventory.RemoveItemEvent += OnRemoved;
         }
 
-        public override void OnShowOutOfRaid(MapView map)
+        protected override void ShowOutOfRaid(MapCanvas map)
         {
             var profile = GameUtils.GetPlayerProfile();
             if (profile?.Inventory == null)
+            {
                 return;
+            }
 
             var markers = new List<MapMarker>();
-
             foreach (var marker in map.GetMapMarkersByCategory("LockedDoor"))
             {
                 if (string.IsNullOrWhiteSpace(marker.AssociatedItemId))
+                {
                     continue;
+                }
 
-                RememberSpecialIcon(marker);
+                Remember(marker);
                 markers.Add(marker);
             }
 
             if (markers.Count == 0)
+            {
                 return;
+            }
 
-            var stashItems = new HashSet<string>(StringComparer.Ordinal);
-            var equipmentItems = new HashSet<string>(StringComparer.Ordinal);
-
+            var stash = new HashSet<string>(StringComparer.Ordinal);
+            var gear = new HashSet<string>(StringComparer.Ordinal);
             foreach (var item in profile.Inventory.Stash.GetAllItems())
             {
-                stashItems.Add(item.StringTemplateId);
+                stash.Add(item.StringTemplateId);
             }
 
             foreach (var item in profile.Inventory.Equipment.GetAllItems())
             {
-                equipmentItems.Add(item.StringTemplateId);
+                gear.Add(item.StringTemplateId);
             }
 
             foreach (var marker in markers)
             {
-                var keyInStash = stashItems.Contains(marker.AssociatedItemId);
-                var keyInEquipment = equipmentItems.Contains(marker.AssociatedItemId);
-
-                ApplyDoorVisual(marker, keyInStash || keyInEquipment);
-                marker.Color = keyInEquipment
+                var inStash = stash.Contains(marker.AssociatedItemId);
+                var inGear = gear.Contains(marker.AssociatedItemId);
+                Draw(marker, inStash || inGear);
+                marker.Color = inGear
                     ? Settings.LockedDoorHasKeyColor.Value
-                    : keyInStash
+                    : inStash
                         ? Settings.LockedDoorInStashColor.Value
                         : Settings.LockedDoorMissingKeyColor.Value;
             }
         }
 
-        public override void OnMapChanged(MapView map, MapDef mapDef)
+        protected override void MapChanged(MapCanvas map, MapDef mapDef)
         {
             if (GameUtils.IsInRaid())
             {
-                OnShowInRaid(map);
+                ShowInRaid(map);
             }
             else
             {
-                OnShowOutOfRaid(map);
+                ShowOutOfRaid(map);
             }
         }
 
-        public override void OnDisable(MapView map)
+        protected override void Disable(MapCanvas map)
         {
-            StopTracking();
-            var markers = map.GetMapMarkersByCategory("LockedDoor");
-
-            foreach (var marker in markers)
+            Stop();
+            foreach (var marker in map.GetMapMarkersByCategory("LockedDoor"))
             {
                 if (string.IsNullOrWhiteSpace(marker.AssociatedItemId))
                 {
                     continue;
                 }
 
-                RememberSpecialIcon(marker);
-                ApplyDoorVisual(marker, hasKey: false);
+                Remember(marker);
+                Draw(marker, false);
                 marker.Color = Settings.LockedDoorDefaultColor.Value;
             }
         }
 
-        public override void OnRaidEnd(MapView map)
-        {
-            StopTracking();
-        }
+        protected override void EndRaid(MapCanvas map) => Stop();
 
-        public override void OnColorsChanged(MapView map)
+        protected override void HideInRaid(MapCanvas map) => Stop();
+
+        protected override void ColorsChanged(MapCanvas map)
         {
             if (map == null)
             {
@@ -170,182 +174,185 @@ namespace MapsExtended.Markers
 
             if (GameUtils.IsInRaid())
             {
-                foreach (var keyId in _doorMarkersByKey.Keys)
+                foreach (var keyId in _doors.Keys)
                 {
-                    UpdateDoors(keyId);
+                    Paint(keyId);
                 }
 
                 return;
             }
 
-            OnShowOutOfRaid(map);
+            ShowOutOfRaid(map);
         }
 
-        public override void OnHideInRaid(MapView map)
-        {
-            StopTracking();
-        }
-
-        private void OnItemAdded(AddItemEventArgs args)
+        private void OnAdded(AddItemEventArgs args)
         {
             if (args.Status != CommandStatus.Succeed || !args.To.IsChildOf(_equipment))
+            {
                 return;
+            }
 
-            UpdateMovedItems(args.Item, true);
+            Move(args.Item, true);
         }
 
-        private void OnItemRemoved(RemoveItemEventArgs args)
+        private void OnRemoved(RemoveItemEventArgs args)
         {
             if (args.Status != CommandStatus.Succeed || !args.From.IsChildOf(_equipment))
+            {
                 return;
+            }
 
-            UpdateMovedItems(args.Item, false);
+            Move(args.Item, false);
         }
 
-        private void UpdateMovedItems(Item item, bool added)
+        private void Move(Item item, bool added)
         {
             if (item is ContainerCollection)
             {
                 foreach (var child in item.GetAllItems())
                 {
-                    UpdateKey(child, added);
+                    Change(child, added);
                 }
             }
             else
             {
-                UpdateKey(item, added);
+                Change(item, added);
             }
         }
 
-        private void UpdateKey(Item item, bool added)
+        private void Change(Item item, bool added)
         {
-            if (item == null || !_doorMarkersByKey.ContainsKey(item.StringTemplateId))
+            if (item == null || !_doors.ContainsKey(item.StringTemplateId))
+            {
                 return;
+            }
 
             if (added)
             {
-                if (TrackKey(item) && _keyCounts[item.StringTemplateId] == 1)
-                    UpdateDoors(item.StringTemplateId);
+                if (Track(item) && _counts[item.StringTemplateId] == 1)
+                {
+                    Paint(item.StringTemplateId);
+                }
             }
-            else if (_trackedKeys.Remove(item))
+            else if (_tracked.Remove(item))
             {
-                var count = --_keyCounts[item.StringTemplateId];
-                if (count == 0)
-                    UpdateDoors(item.StringTemplateId);
+                if (--_counts[item.StringTemplateId] == 0)
+                {
+                    Paint(item.StringTemplateId);
+                }
             }
         }
 
-        private bool TrackKey(Item item)
+        private bool Track(Item item)
         {
-            if (item == null || !_doorMarkersByKey.ContainsKey(item.StringTemplateId) || !_trackedKeys.Add(item))
+            if (item == null || !_doors.ContainsKey(item.StringTemplateId) || !_tracked.Add(item))
+            {
                 return false;
+            }
 
-            _keyCounts.TryGetValue(item.StringTemplateId, out var count);
-            _keyCounts[item.StringTemplateId] = count + 1;
+            _counts.TryGetValue(item.StringTemplateId, out var count);
+            _counts[item.StringTemplateId] = count + 1;
             return true;
         }
 
-        private void UpdateDoors(string keyId)
+        private void Paint(string keyId)
         {
-            var hasKey = _keyCounts.TryGetValue(keyId, out var count) && count > 0;
-            foreach (var marker in _doorMarkersByKey[keyId])
+            var hasKey = _counts.TryGetValue(keyId, out var count) && count > 0;
+            foreach (var marker in _doors[keyId])
             {
-                ApplyDoorVisual(marker, hasKey);
+                Draw(marker, hasKey);
                 marker.Color = hasKey
                     ? Settings.LockedDoorHasKeyColor.Value
                     : Settings.LockedDoorMissingKeyColor.Value;
             }
         }
 
-        private void RememberSpecialIcon(MapMarker marker)
+        private void Remember(MapMarker marker)
         {
-            if (IsCarDoorPath(marker.ImagePath))
+            if (IsCar(marker.ImagePath))
             {
-                _carDoorMarkers.Add(marker);
+                _cars.Add(marker);
             }
 
-            if (IsSafePath(marker.ImagePath))
+            if (IsSafe(marker.ImagePath))
             {
-                _safeMarkers.Add(marker);
+                _safes.Add(marker);
             }
 
-            if (IsKeycardPath(marker.ImagePath))
+            if (IsKeycard(marker.ImagePath))
             {
-                _keycardMarkers.Add(marker);
+                _keycards.Add(marker);
             }
         }
 
-        private void ApplyDoorVisual(MapMarker marker, bool hasKey)
+        private void Draw(MapMarker marker, bool hasKey)
         {
-            var isCar = _carDoorMarkers.Contains(marker) || IsCarDoorPath(marker.ImagePath);
-            if (isCar)
+            if (_cars.Contains(marker) || IsCar(marker.ImagePath))
             {
-                _carDoorMarkers.Add(marker);
-                marker.SetImagePath(hasKey ? CarKeyPath : CarDoorPath);
+                _cars.Add(marker);
+                marker.SetImagePath(hasKey ? CarKey : CarDoor);
                 return;
             }
 
-            var isSafe = _safeMarkers.Contains(marker) || IsSafePath(marker.ImagePath);
-            if (isSafe)
+            if (_safes.Contains(marker) || IsSafe(marker.ImagePath))
             {
-                _safeMarkers.Add(marker);
-                marker.SetImagePath(hasKey ? SafeWithKeyPath : SafeWithLockPath);
+                _safes.Add(marker);
+                marker.SetImagePath(hasKey ? SafeWithKey : SafeWithLock);
                 return;
             }
 
-            var isKeycard = _keycardMarkers.Contains(marker) || IsKeycardPath(marker.ImagePath);
-            if (isKeycard)
+            if (_keycards.Contains(marker) || IsKeycard(marker.ImagePath))
             {
-                _keycardMarkers.Add(marker);
-                marker.SetImagePath(hasKey ? KeycardWithCardPath : KeycardWithLockPath);
+                _keycards.Add(marker);
+                marker.SetImagePath(hasKey ? KeycardWithCard : KeycardWithLock);
                 return;
             }
 
-            marker.SetImagePath(hasKey ? DoorWithKeyPath : DoorWithLockPath);
+            marker.SetImagePath(hasKey ? DoorWithKey : DoorWithLock);
         }
 
-        private static bool IsCarDoorPath(string path)
+        private static bool IsCar(string path)
         {
-            var file = IconFileName(path);
+            var file = FileName(path);
             return file.Equals("car_door", StringComparison.OrdinalIgnoreCase)
                    || file.Equals("car_key", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static bool IsSafePath(string path)
+        private static bool IsSafe(string path)
         {
-            var file = IconFileName(path);
+            var file = FileName(path);
             return file.Equals("safe_with_lock", StringComparison.OrdinalIgnoreCase)
                    || file.Equals("safe_with_key", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static bool IsKeycardPath(string path)
+        private static bool IsKeycard(string path)
         {
-            var file = IconFileName(path);
+            var file = FileName(path);
             return file.Equals("door_keycard_with_lock", StringComparison.OrdinalIgnoreCase)
                    || file.Equals("door_keycard_with_keycard", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static string IconFileName(string path)
+        private static string FileName(string path)
         {
             return string.IsNullOrEmpty(path) ? "" : Path.GetFileNameWithoutExtension(path);
         }
 
-        private void StopTracking()
+        private void Stop()
         {
-            if (_inventoryController != null)
+            if (_inventory != null)
             {
-                _inventoryController.AddItemEvent -= OnItemAdded;
-                _inventoryController.RemoveItemEvent -= OnItemRemoved;
-                _inventoryController = null;
+                _inventory.AddItemEvent -= OnAdded;
+                _inventory.RemoveItemEvent -= OnRemoved;
+                _inventory = null;
             }
 
             _equipment = null;
-            _doorMarkersByKey.Clear();
-            _carDoorMarkers.Clear();
-            _safeMarkers.Clear();
-            _keycardMarkers.Clear();
-            _keyCounts.Clear();
-            _trackedKeys.Clear();
+            _doors.Clear();
+            _cars.Clear();
+            _safes.Clear();
+            _keycards.Clear();
+            _counts.Clear();
+            _tracked.Clear();
         }
     }
 }

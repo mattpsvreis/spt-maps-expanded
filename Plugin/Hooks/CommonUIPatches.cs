@@ -17,7 +17,6 @@ namespace MapsExtended.Hooks
         public static void PatchPostfix(CommonUI __instance)
         {
             var mapScreen = Traverse.Create(__instance.InventoryScreen).Field("_mapScreen").GetValue<MapScreen>();
-            
             Plugin.Instance.TryAttachToMapScreen(mapScreen);
         }
     }

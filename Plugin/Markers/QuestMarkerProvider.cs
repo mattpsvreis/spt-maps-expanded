@@ -1,94 +1,79 @@
 using System.Collections.Generic;
 using MapsExtended.Config;
 using MapsExtended.Core;
-using MapsExtended.Presentation.Overlays;
 using MapsExtended.Integration;
+using MapsExtended.Presentation.Overlays;
 using EFT.Quests;
 
 namespace MapsExtended.Markers
 {
-    public class QuestMarkerProvider : MarkerProviderBase
+    public class QuestMarkerProvider : PinSource
     {
-        private readonly List<MapMarker> _questMarkers = [];
-        private readonly HashSet<Quest> _subscribedQuests = [];
-        private QuestController _questController;
-        private MapView _map;
+        private readonly List<MapMarker> _pins = [];
+        private readonly HashSet<Quest> _watched = [];
+        private QuestController _controller;
 
-        public override void OnShowInRaid(MapView map)
+        protected override void ShowInRaid(MapCanvas map)
         {
-            _map = map;
             if (GameUtils.IsScavRaid())
             {
                 return;
             }
 
-            SubscribeToQuests();
-            RefreshMarkers();
+            Watch();
+            Refresh();
         }
 
-        public override void OnHideInRaid(MapView map)
+        protected override void HideInRaid(MapCanvas map)
         {
-            UnsubscribeFromQuests();
-            TryRemoveMarkers();
-            _map = null;
+            Unwatch();
+            Clear();
         }
 
-        public override void OnShowOutOfRaid(MapView map)
-        {
-            _map = map;
-            RefreshMarkers();
-        }
+        protected override void ShowOutOfRaid(MapCanvas map) => Refresh();
 
-        public override void OnHideOutOfRaid(MapView map)
-        {
-            TryRemoveMarkers();
-            _map = null;
-        }
+        protected override void HideOutOfRaid(MapCanvas map) => Clear();
 
-        public override void OnMapChanged(MapView map, MapDef mapDef)
+        protected override void MapChanged(MapCanvas map, MapDef mapDef)
         {
-            _map = map;
-
             if (GameUtils.IsScavRaid())
             {
-                TryRemoveMarkers();
+                Clear();
                 return;
             }
 
             if (GameUtils.IsInRaid())
             {
-                SubscribeToQuests();
+                Watch();
             }
 
-            RefreshMarkers();
+            Refresh();
         }
 
-        public override void OnRaidEnd(MapView map)
+        protected override void EndRaid(MapCanvas map)
         {
-            UnsubscribeFromQuests();
+            Unwatch();
             QuestUtils.DiscardQuestData();
-            TryRemoveMarkers();
-            _map = null;
+            Clear();
         }
 
-        public override void OnDisable(MapView map)
+        protected override void Disable(MapCanvas map)
         {
-            UnsubscribeFromQuests();
+            Unwatch();
             QuestUtils.DiscardQuestData();
-            TryRemoveMarkers();
-            _map = null;
+            Clear();
         }
 
-        public override void OnColorsChanged(MapView map)
+        protected override void ColorsChanged(MapCanvas map)
         {
             var color = Settings.QuestColor.Value;
-            foreach (var marker in _questMarkers)
+            foreach (var pin in _pins)
             {
-                marker.Color = color;
+                pin.Color = color;
             }
         }
 
-        private void SubscribeToQuests()
+        private void Watch()
         {
             var player = GameUtils.GetMainPlayer();
             if (player == null)
@@ -96,138 +81,135 @@ namespace MapsExtended.Markers
                 return;
             }
 
-            var controller = player.QuestController;
-            if (!ReferenceEquals(_questController, controller))
+            var next = player.QuestController;
+            if (!ReferenceEquals(_controller, next))
             {
-                UnsubscribeFromQuests();
-                _questController = controller;
-
-                if (_questController != null)
+                Unwatch();
+                _controller = next;
+                if (_controller != null)
                 {
-                    _questController.OnNewQuestsAdded += OnNewQuest;
+                    _controller.OnNewQuestsAdded += OnNew;
                 }
             }
 
-            if (_questController?.Quests == null)
-                return;
-
-            foreach (var quest in _questController.Quests)
+            if (_controller?.Quests == null)
             {
-                SubscribeToQuest(quest);
-            }
-        }
-
-        private void SubscribeToQuest(Quest quest)
-        {
-            if (quest == null || !_subscribedQuests.Add(quest))
-                return;
-
-            quest.OnConditionChanged += OnQuestConditionChanged;
-            quest.OnStatusChanged += OnQuestStatusChanged;
-        }
-
-        private void UnsubscribeFromQuests()
-        {
-            if (_questController != null)
-            {
-                _questController.OnNewQuestsAdded -= OnNewQuest;
-                _questController = null;
-            }
-
-            foreach (var quest in _subscribedQuests)
-            {
-                quest.OnConditionChanged -= OnQuestConditionChanged;
-                quest.OnStatusChanged -= OnQuestStatusChanged;
-            }
-            _subscribedQuests.Clear();
-        }
-
-        private void OnNewQuest(Quest quest)
-        {
-            SubscribeToQuest(quest);
-            RefreshMarkers();
-        }
-
-        private void OnQuestConditionChanged(Quest quest)
-        {
-            RefreshMarkers();
-        }
-
-        private void OnQuestStatusChanged(Quest quest, bool notify)
-        {
-            RefreshMarkers();
-        }
-
-        private void RefreshMarkers()
-        {
-            if (_map == null || !Settings.ShowQuestsInRaid.Value)
-            {
-                TryRemoveMarkers();
                 return;
             }
 
-            if (GameUtils.IsScavRaid())
+            foreach (var quest in _controller.Quests)
             {
-                TryRemoveMarkers();
+                Watch(quest);
+            }
+        }
+
+        private void Watch(Quest quest)
+        {
+            if (quest == null || !_watched.Add(quest))
+            {
                 return;
             }
 
-            TryRemoveMarkers();
+            quest.OnConditionChanged += OnChanged;
+            quest.OnStatusChanged += OnStatus;
+        }
 
+        private void Unwatch()
+        {
+            if (_controller != null)
+            {
+                _controller.OnNewQuestsAdded -= OnNew;
+                _controller = null;
+            }
+
+            foreach (var quest in _watched)
+            {
+                quest.OnConditionChanged -= OnChanged;
+                quest.OnStatusChanged -= OnStatus;
+            }
+
+            _watched.Clear();
+        }
+
+        private void OnNew(Quest quest)
+        {
+            Watch(quest);
+            Refresh();
+        }
+
+        private void OnChanged(Quest quest) => Refresh();
+
+        private void OnStatus(Quest quest, bool notify) => Refresh();
+
+        private void Refresh()
+        {
+            if (Map == null || !Settings.ShowQuestsInRaid.Value || GameUtils.IsScavRaid())
+            {
+                Clear();
+                return;
+            }
+
+            Clear();
             if (GameUtils.IsInRaid())
             {
-                AddQuestObjectiveMarkersInRaid(_map);
+                PlaceInRaid();
             }
             else
             {
-                AddQuestObjectiveMarkersOutOfRaid(_map);
+                PlaceOutOfRaid();
             }
         }
 
-        private void AddQuestObjectiveMarkersInRaid(MapView map)
+        private void PlaceInRaid()
         {
             QuestUtils.TryCaptureQuestData();
-
             var player = GameUtils.GetMainPlayer();
             if (player == null)
-                return;
-
-            var markerDefs = QuestUtils.GetMarkerDefsForPlayer(player);
-            if (markerDefs == null)
-                return;
-
-            foreach (var markerDef in markerDefs)
             {
-                var marker = map.AddMapMarker(markerDef);
-                _questMarkers.Add(marker);
+                return;
+            }
+
+            var defs = QuestUtils.GetMarkerDefsForPlayer(player);
+            if (defs == null)
+            {
+                return;
+            }
+
+            foreach (var def in defs)
+            {
+                _pins.Add(Map.AddMapMarker(def));
             }
         }
 
-        private void AddQuestObjectiveMarkersOutOfRaid(MapView map)
+        private void PlaceOutOfRaid()
         {
             var profile = GameUtils.GetPlayerProfile();
-            var mapDef = map.CurrentMapDef;
+            var mapDef = Map.CurrentMapDef;
             if (profile == null || mapDef == null)
-                return;
-
-            var markerDefs = QuestUtils.GetMarkerDefsOutOfRaid(profile, mapDef, map);
-            if (markerDefs == null)
-                return;
-
-            foreach (var markerDef in markerDefs)
             {
-                var marker = map.AddMapMarker(markerDef);
-                _questMarkers.Add(marker);
+                return;
+            }
+
+            var defs = QuestUtils.GetMarkerDefsOutOfRaid(profile, mapDef, Map);
+            if (defs == null)
+            {
+                return;
+            }
+
+            foreach (var def in defs)
+            {
+                _pins.Add(Map.AddMapMarker(def));
             }
         }
 
-        private void TryRemoveMarkers()
+        private void Clear()
         {
-            foreach (var marker in _questMarkers)
+            foreach (var pin in _pins)
             {
-                marker.ContainingMapView.RemoveMapMarker(marker);
+                pin.ContainingMapView?.RemoveMapMarker(pin);
             }
-            _questMarkers.Clear();
+
+            _pins.Clear();
         }
     }
 }

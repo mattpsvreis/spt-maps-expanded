@@ -1,82 +1,64 @@
 using MapsExtended.Config;
 using MapsExtended.Core;
-using MapsExtended.Presentation.Overlays;
 using MapsExtended.Integration;
-using MapsExtended.Presentation;
-using UnityEngine;
+using MapsExtended.Presentation.Overlays;
 
 namespace MapsExtended.Markers
 {
-    public class PlayerMarkerProvider : MarkerProviderBase
+    public class PlayerMarkerProvider : PinSource
     {
-        // TODO: move to config
-        private const string PlayerCategory = "Main Player";
-        private const string PlayerImagePath = "Markers/arrow.png";
-        //
+        private const string Category = "Main Player";
+        private const string Icon = "Markers/arrow.png";
+        private PlayerMapMarker _pin;
 
-        private PlayerMapMarker _playerMarker;
+        protected override void ShowInRaid(MapCanvas map) => Place(map);
 
-        public override void OnShowInRaid(MapView map)
+        protected override void EndRaid(MapCanvas map) => Lift();
+
+        protected override void MapChanged(MapCanvas map, MapDef mapDef)
         {
-            TryAddMarker(map);
-        }
-
-        public override void OnRaidEnd(MapView map)
-        {
-            TryRemoveMarker();
-        }
-
-        public override void OnMapChanged(MapView map, MapDef mapDef)
-        {
-            TryRemoveMarker();
-
+            Lift();
             if (GameUtils.IsInRaid())
             {
-                TryAddMarker(map);
+                Place(map);
             }
         }
 
-        public override void OnDisable(MapView map)
-        {
-            TryRemoveMarker();
-        }
+        protected override void Disable(MapCanvas map) => Lift();
 
-        public override void OnColorsChanged(MapView map)
+        protected override void ColorsChanged(MapCanvas map)
         {
-            if (_playerMarker != null)
+            if (_pin != null)
             {
-                _playerMarker.Color = Settings.PlayerColor.Value;
+                _pin.Color = Settings.PlayerColor.Value;
             }
         }
 
-        private void TryAddMarker(MapView map)
+        private void Place(MapCanvas map)
         {
-            if (_playerMarker is not null)
+            if (_pin != null)
             {
                 return;
             }
 
             var player = GameUtils.GetMainPlayer();
-            if (player is null || player.IsHeadlessClient())
+            if (player == null || player.IsHeadlessClient())
             {
                 return;
             }
 
-            var color = Settings.PlayerColor.Value;
-            
-            // try adding the marker
-            _playerMarker = map.AddPlayerMarker(player, PlayerCategory, color, PlayerImagePath);
+            _pin = map.AddPlayerMarker(player, Category, Settings.PlayerColor.Value, Icon);
         }
 
-        private void TryRemoveMarker()
+        private void Lift()
         {
-            if (_playerMarker is null)
+            if (_pin == null)
             {
                 return;
             }
 
-            _playerMarker.ContainingMapView.RemoveMapMarker(_playerMarker);
-            _playerMarker = null;
+            _pin.ContainingMapView?.RemoveMapMarker(_pin);
+            _pin = null;
         }
     }
 }

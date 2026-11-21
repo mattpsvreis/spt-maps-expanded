@@ -6,9 +6,8 @@ using System.Linq;
 namespace MapsExtended.Integration
 {
     /// <summary>
-    /// Redirects dropdown filter / preferred-map lookup onto Extended addon packs
-    /// when Map Variants / Classic Maps ports by LennoxP90 / Manimal backports are active.
-    /// Live location IDs used by markers stay untouched.
+    /// Picks the Extended addon pack when Map Variants or Manimal/Classic ports are active.
+    /// Live location ids used by markers stay unchanged.
     /// </summary>
     internal static class MapAlias
     {
@@ -22,47 +21,50 @@ namespace MapsExtended.Integration
         internal const string ManimalLabsGuid = "com.manimal.labsboiler";
 
         private static readonly HashSet<string> Logged = new(StringComparer.Ordinal);
-        private static readonly Dictionary<string, bool> PackReadyCache = new(StringComparer.OrdinalIgnoreCase);
-        private static readonly HashSet<string> MissingPackWarned = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly Dictionary<string, bool> PackCache = new(StringComparer.OrdinalIgnoreCase);
+        private static readonly HashSet<string> MissingWarned = new(StringComparer.OrdinalIgnoreCase);
 
         internal static string Resolve(string locationId)
         {
-            if (string.IsNullOrWhiteSpace(locationId))
-            {
-                return locationId;
-            }
-
-            // Already an Extended alias — leave alone (idempotent for filter + preferred).
-            if (IsExtendedAlias(locationId))
+            if (string.IsNullOrWhiteSpace(locationId) || AlreadyAlias(locationId))
             {
                 return locationId;
             }
 
             var requested = locationId;
-
             if (FactoryClassicBridge.IsFactory(locationId))
             {
-                var classic = FactoryClassicBridge.IsClassicChosen || FactoryClassicBridge.ClassicSceneLoaded;
-                var ready = PackReady("Factory_Classic");
-                if (classic && ready)
-                {
-                    locationId = FactoryClassicAlias;
-                }
-                else if (classic && !ready)
-                {
-                    WarnMissingPackOnce("Factory_Classic", "Classic Maps ports by LennoxP90 is active, but Addons/Extended/Factory_Classic is missing.");
-                }
-
-                LogOnce($"factory|{requested}|{classic}|{ready}|{locationId}",
-                    $"Alias: factory requested={requested}, classic={classic}, ready={ready}, result={locationId}");
-                return locationId;
+                return ResolveFactory(requested);
             }
 
-            var normalized = locationId.Trim().ToLowerInvariant();
+            return ResolvePort(requested);
+        }
+
+        private static string ResolveFactory(string requested)
+        {
+            var classic = FactoryClassicBridge.IsClassicChosen || FactoryClassicBridge.ClassicSceneLoaded;
+            var ready = PackReady("Factory_Classic");
+            var result = requested;
+            if (classic && ready)
+            {
+                result = FactoryClassicAlias;
+            }
+            else if (classic && !ready)
+            {
+                WarnOnce("Factory_Classic", "Classic Maps ports by LennoxP90 is active, but Addons/Extended/Factory_Classic is missing.");
+            }
+
+            LogOnce($"factory|{requested}|{classic}|{ready}|{result}",
+                $"Alias: factory requested={requested}, classic={classic}, ready={ready}, result={result}");
+            return result;
+        }
+
+        private static string ResolvePort(string requested)
+        {
+            var normalized = requested.Trim().ToLowerInvariant();
             string alias;
             string pluginGuid;
             string packFolder;
-
             switch (normalized)
             {
                 case "interchange":
@@ -76,49 +78,51 @@ namespace MapsExtended.Integration
                     packFolder = "Labs_Satellite";
                     break;
                 default:
-                    return locationId;
+                    return requested;
             }
 
-            var mv = MapVariantsBridge.Resolve(locationId);
+            var variants = MapVariantsBridge.Resolve(requested);
             var packReady = PackReady(packFolder);
             var backportReady = PluginDetection.Loaded(pluginGuid) && packReady;
+            var result = requested;
 
-            if (mv.ApiAvailable && mv.Managed)
+            if (variants.ApiAvailable && variants.Managed)
             {
-                if (mv.Decided && mv.IsBackport && backportReady)
+                if (variants.Decided && variants.IsBackport && backportReady)
                 {
-                    locationId = alias;
+                    result = alias;
                 }
-                else if (mv.Decided && mv.IsBackport && !backportReady)
+                else if (variants.Decided && variants.IsBackport && !backportReady)
                 {
-                    WarnMissingPackOnce(packFolder,
+                    WarnOnce(packFolder,
                         $"MapVariants selected backport for {requested}, but Extended pack / plugin is unavailable ({pluginGuid}).");
                 }
 
-                LogOnce($"managed|{requested}|{mv}|{backportReady}|{locationId}",
-                    $"Alias: requested={requested}, MapVariants({mv}), ready={backportReady}, result={locationId}");
-                return locationId;
+                LogOnce($"managed|{requested}|{variants}|{backportReady}|{result}",
+                    $"Alias: requested={requested}, MapVariants({variants}), ready={backportReady}, result={result}");
+                return result;
             }
 
-            // Labs Boiler often forces the boiler layout even without MapVariants owning the location.
             if (normalized == "laboratory" && backportReady)
             {
-                locationId = alias;
+                result = alias;
             }
 
-            LogOnce($"fallback|{requested}|{mv}|{backportReady}|{locationId}",
-                $"Alias: requested={requested}, MapVariants({mv}), ready={backportReady}, result={locationId}");
-            return locationId;
+            LogOnce($"fallback|{requested}|{variants}|{backportReady}|{result}",
+                $"Alias: requested={requested}, MapVariants({variants}), ready={backportReady}, result={result}");
+            return result;
         }
 
-        private static bool IsExtendedAlias(string locationId)
-            => locationId.Equals(InterchangeAlias, StringComparison.OrdinalIgnoreCase)
-               || locationId.Equals(LabsAlias, StringComparison.OrdinalIgnoreCase)
-               || locationId.Equals(FactoryClassicAlias, StringComparison.OrdinalIgnoreCase);
+        private static bool AlreadyAlias(string locationId)
+        {
+            return locationId.Equals(InterchangeAlias, StringComparison.OrdinalIgnoreCase)
+                   || locationId.Equals(LabsAlias, StringComparison.OrdinalIgnoreCase)
+                   || locationId.Equals(FactoryClassicAlias, StringComparison.OrdinalIgnoreCase);
+        }
 
         private static bool PackReady(string folderName)
         {
-            if (PackReadyCache.TryGetValue(folderName, out var cached))
+            if (PackCache.TryGetValue(folderName, out var cached))
             {
                 return cached;
             }
@@ -132,8 +136,7 @@ namespace MapsExtended.Integration
                     var hasJson = Directory.EnumerateFiles(root, "*.jsonc").Any()
                                   || Directory.EnumerateFiles(root, "*.json").Any();
                     var layers = Path.Combine(root, "Layers");
-                    var hasLayers = Directory.Exists(layers) && Directory.EnumerateFiles(layers).Any();
-                    ready = hasJson && hasLayers;
+                    ready = hasJson && Directory.Exists(layers) && Directory.EnumerateFiles(layers).Any();
                 }
             }
             catch
@@ -141,13 +144,13 @@ namespace MapsExtended.Integration
                 ready = false;
             }
 
-            PackReadyCache[folderName] = ready;
+            PackCache[folderName] = ready;
             return ready;
         }
 
-        private static void WarnMissingPackOnce(string key, string message)
+        private static void WarnOnce(string key, string message)
         {
-            if (MissingPackWarned.Add(key))
+            if (MissingWarned.Add(key))
             {
                 Plugin.Log?.LogWarning(message);
             }
@@ -155,12 +158,10 @@ namespace MapsExtended.Integration
 
         private static void LogOnce(string key, string message)
         {
-            if (!Plugin.DebugEnabled || !Logged.Add(key))
+            if (Plugin.DebugEnabled && Logged.Add(key))
             {
-                return;
+                Plugin.Log?.LogInfo("[MapsExpanded:DBG] " + message);
             }
-
-            Plugin.Log?.LogInfo("[MapsExpanded:DBG] " + message);
         }
     }
 }

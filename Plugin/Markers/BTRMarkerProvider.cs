@@ -1,86 +1,62 @@
 using MapsExtended.Config;
 using MapsExtended.Core;
-using MapsExtended.Presentation.Overlays;
 using MapsExtended.Integration;
-using MapsExtended.Presentation;
+using MapsExtended.Presentation.Overlays;
 using UnityEngine;
 
 namespace MapsExtended.Markers
 {
-    public class BtrMarkerProvider : MarkerProviderBase
+    public class BtrMarkerProvider : PinSource
     {
-        // TODO: move to config
-        private static readonly string BtrIconPath = "Markers/btr.png";
-        private static readonly Vector2 BtrSize = new(45, 45f);
-        private static readonly string BtrName = "BTR";
-        private static readonly string BtrCategory = "BTR";
-        //
+        private const string Icon = "Markers/btr.png";
+        private static readonly Vector2 Size = new(45f, 45f);
+        private MapMarker _pin;
 
-        private MapMarker _btrMarker;
+        protected override void ShowInRaid(MapCanvas map) => Place(map);
 
-        public override void OnShowInRaid(MapView map)
+        protected override void MapChanged(MapCanvas map, MapDef mapDef)
         {
-            if (_btrMarker is not null)
+            Lift();
+            Place(map);
+        }
+
+        protected override void EndRaid(MapCanvas map) => Lift();
+
+        protected override void Disable(MapCanvas map) => Lift();
+
+        protected override void ColorsChanged(MapCanvas map)
+        {
+            if (_pin != null)
+            {
+                _pin.Color = Settings.BtrColor.Value;
+            }
+        }
+
+        private void Place(MapCanvas map)
+        {
+            if (_pin != null)
             {
                 return;
             }
 
-            TryAddMarker(map);
-        }
-
-        public override void OnMapChanged(MapView map, MapDef mapDef)
-        {
-            TryRemoveMarker();
-            TryAddMarker(map);
-        }
-
-        public override void OnRaidEnd(MapView map)
-        {
-            TryRemoveMarker();
-        }
-
-        public override void OnDisable(MapView map)
-        {
-            TryRemoveMarker();
-        }
-
-        public override void OnColorsChanged(MapView map)
-        {
-            if (_btrMarker != null)
-            {
-                _btrMarker.Color = Settings.BtrColor.Value;
-            }
-        }
-
-        private void TryAddMarker(MapView map)
-        {
-            if (_btrMarker != null)
+            var btr = GameUtils.GetBtrView();
+            if (btr == null)
             {
                 return;
             }
 
-            var btrView = GameUtils.GetBtrView();
-            if (btrView is null)
-            {
-                return;
-            }
-
-            var color = Settings.BtrColor.Value;
-            
-            // try adding the marker
-            _btrMarker = map.AddTransformMarker(btrView.transform, BtrName, BtrCategory, color,
-                                                BtrIconPath, BtrSize);
+            _pin = map.AddTransformMarker(btr.transform, "BTR", "BTR", Settings.BtrColor.Value, Icon, Size);
         }
 
-        private void TryRemoveMarker()
+        private void Lift()
         {
-            if (_btrMarker is null)
+            if (_pin == null)
             {
                 return;
             }
 
-            _btrMarker.ContainingMapView.RemoveMapMarker(_btrMarker);
-            _btrMarker = null;
+            _pin.ContainingMapView?.RemoveMapMarker(_pin);
+            _pin = null;
         }
-}
+    }
 }

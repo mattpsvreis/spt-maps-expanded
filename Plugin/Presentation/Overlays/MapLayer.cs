@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using MapsExtended.Core;
-using MapsExtended.Integration;
 using MapsExtended.Presentation;
 using Unity.VectorGraphics;
 using UnityEngine;
@@ -25,84 +24,60 @@ namespace MapsExtended.Presentation.Overlays
 
     public class MapLayer : MonoBehaviour
     {
-        private static readonly float FadeMultiplierPerLayer = 0.5f;
-        private static readonly float DefaultLevelFallbackAlpha = 0.1f;
+        private const float FadePerFloor = 0.5f;
+        private const float DefaultFloorAlpha = 0.1f;
 
-        private string Name { get; set; }
-        private MaskableGraphic Image { get; set; }
-        public RectTransform RectTransform
-        {
-            get => gameObject.transform as RectTransform;
-        }
+        private MapLayerDef _def = new();
+        private MaskableGraphic _image;
 
-        public int Level
-        {
-            get => _def.Level;
-        }
+        public int Level => _def.Level;
         public LayerStatus Status { get; private set; }
         public bool IsOnDefaultLevel { get; set; }
-
-        private MapLayerDef _def = new MapLayerDef();
+        public RectTransform RectTransform => gameObject.transform as RectTransform;
 
         public static MapLayer Create(GameObject parent, string name, MapLayerDef def, float degreesRotation)
         {
-            var sprite = TextureUtils.GetOrLoadMapSprite(def);
-            if (sprite == null)
-            {
-                throw new InvalidDataException($"Unable to load map image: {def.ImagePath}");
-            }
+            var sprite = TextureUtils.GetOrLoadMapSprite(def)
+                         ?? throw new InvalidDataException($"Unable to load map image: {def.ImagePath}");
 
             var go = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer));
             go.layer = parent.layer;
             go.transform.SetParent(parent.transform);
             go.ResetRectTransform();
 
-            var rectTransform = go.GetRectTransform();
             var layer = go.AddComponent<MapLayer>();
-
-            // set layer size
+            var rect = go.GetRectTransform();
             var size = def.ImageBounds.Max - def.ImageBounds.Min;
-            var rotatedSize = MathUtils.GetRotatedRectangle(size, degreesRotation);
-            rectTransform.sizeDelta = rotatedSize;
+            rect.sizeDelta = MathUtils.GetRotatedRectangle(size, degreesRotation);
+            rect.anchoredPosition = MathUtils.GetMidpoint(def.ImageBounds.Min, def.ImageBounds.Max);
+            rect.localRotation = Quaternion.Euler(0, 0, degreesRotation);
 
-            // set layer offset
-            var offset = MathUtils.GetMidpoint(def.ImageBounds.Min, def.ImageBounds.Max);
-            rectTransform.anchoredPosition = offset;
-
-            // set rotation to combat when we rotate the whole map content
-            rectTransform.localRotation = Quaternion.Euler(0, 0, degreesRotation);
-
-            layer.Name = name;
             layer._def = def;
-
-            // load image
             if (Path.GetExtension(def.ImagePath).Equals(".svg", StringComparison.OrdinalIgnoreCase))
             {
                 var image = go.AddComponent<SVGImage>();
                 image.preserveAspect = false;
                 image.sprite = sprite;
-                layer.Image = image;
+                image.raycastTarget = false;
+                layer._image = image;
             }
             else
             {
                 var image = go.AddComponent<Image>();
                 image.preserveAspect = false;
                 image.sprite = sprite;
-                layer.Image = image;
+                image.raycastTarget = false;
+                layer._image = image;
             }
-
-            layer.Image.raycastTarget = false;
 
             return layer;
         }
 
         public bool IsCoordinateInLayer(Vector3 coordinate)
         {
-            foreach (var gameBound in _def.GameBounds)
+            foreach (var bound in _def.GameBounds)
             {
-                if (coordinate.x > gameBound.Min.x && coordinate.x < gameBound.Max.x
-                 && coordinate.y > gameBound.Min.y && coordinate.y < gameBound.Max.y
-                 && coordinate.z > gameBound.Min.z && coordinate.z < gameBound.Max.z)
+                if (Inside(coordinate, bound))
                 {
                     return true;
                 }
@@ -113,18 +88,16 @@ namespace MapsExtended.Presentation.Overlays
 
         public float GetMatchingBoundVolume(Vector3 coordinate)
         {
-            // a bit scuffed formatting
-            // this assumes that a layer wouldn't have multiple overlapping game bounds
-            foreach (var gameBound in _def.GameBounds)
+            foreach (var bound in _def.GameBounds)
             {
-                if (coordinate.x > gameBound.Min.x && coordinate.x < gameBound.Max.x
-                 && coordinate.y > gameBound.Min.y && coordinate.y < gameBound.Max.y
-                 && coordinate.z > gameBound.Min.z && coordinate.z < gameBound.Max.z)
+                if (!Inside(coordinate, bound))
                 {
-                    return (gameBound.Max.x - gameBound.Min.x) *
-                           (gameBound.Max.y - gameBound.Min.y) *
-                           (gameBound.Max.z - gameBound.Min.z);
+                    continue;
                 }
+
+                return (bound.Max.x - bound.Min.x)
+                       * (bound.Max.y - bound.Min.y)
+                       * (bound.Max.z - bound.Min.z);
             }
 
             return float.MinValue;
@@ -132,34 +105,30 @@ namespace MapsExtended.Presentation.Overlays
 
         public void OnTopLevelSelected(int newLevel)
         {
-            Status = LayerStatus.Hidden;
-            if (Level == newLevel)
-            {
-                Status = LayerStatus.OnTop;
-            }
-            else if (Level < newLevel)
-            {
-                Status = LayerStatus.Underneath;
-            }
+            Status = Level == newLevel
+                ? LayerStatus.OnTop
+                : Level < newLevel
+                    ? LayerStatus.Underneath
+                    : LayerStatus.Hidden;
 
-            var isActive = true;
-            var levelDelta = newLevel - Level;
-            var c = Mathf.Clamp01(Mathf.Pow(FadeMultiplierPerLayer, levelDelta));
-            var a = 1f;
-
-            if (Status == LayerStatus.Hidden)
+            var active = Status != LayerStatus.Hidden;
+            var shade = Mathf.Clamp01(Mathf.Pow(FadePerFloor, newLevel - Level));
+            var alpha = 1f;
+            if (Status == LayerStatus.Hidden && IsOnDefaultLevel)
             {
-                isActive = false;
-
-                if (IsOnDefaultLevel)
-                {
-                    a = DefaultLevelFallbackAlpha;
-                    isActive = true;
-                }
+                active = true;
+                alpha = DefaultFloorAlpha;
             }
 
-            gameObject.SetActive(isActive);
-            Image.color = new Color(c, c, c, a);
+            gameObject.SetActive(active);
+            _image.color = new Color(shade, shade, shade, alpha);
+        }
+
+        private static bool Inside(Vector3 coordinate, BoundingRectangularSolid bound)
+        {
+            return coordinate.x > bound.Min.x && coordinate.x < bound.Max.x
+                   && coordinate.y > bound.Min.y && coordinate.y < bound.Max.y
+                   && coordinate.z > bound.Min.z && coordinate.z < bound.Max.z;
         }
     }
 }

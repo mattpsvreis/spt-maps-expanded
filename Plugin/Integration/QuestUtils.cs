@@ -3,271 +3,234 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Comfort.Common;
-using MapsExtended.Config;
-using MapsExtended.Core;
-using MapsExtended.Presentation.Overlays;
 using EFT;
 using EFT.Interactive;
 using EFT.Quests;
 using HarmonyLib;
+using MapsExtended.Config;
+using MapsExtended.Core;
+using MapsExtended.Presentation.Overlays;
 using Newtonsoft.Json;
 using UnityEngine;
 
 namespace MapsExtended.Integration
 {
-    // NOTE: Most of this is adapted from work done for Prop's GTFO mod (https://github.com/dvize/GTFO)
-    // this likely does not count as a "substantial portion" of the software
-    // under MIT license (https://github.com/dvize/GTFO/blob/master/LICENSE.txt)
+    /// <summary>
+    /// Quest pins for the current raid and for the hideout map.
+    /// In raid, zone triggers and quest-item loot are captured from the live scene.
+    /// Out of raid, zone positions come from a cache written the last time that map was played.
+    /// </summary>
     public static class QuestUtils
     {
-        // TODO: move to config
-        private const string QuestCategory = "Quest";
-        private const string QuestImagePath = "Markers/quest.png";
-        private static readonly Vector2 QuestPivot = new Vector2(0.5f, 0f);
+        private const string Category = "Quest";
+        private const string ImagePath = "Markers/quest.png";
+        private const string ExtractCategory = "Extract";
+        private const float VisitHintRadius = 25f;
+        private const float SpawnDedupRadius = 1f;
+
+        private static readonly Vector2 Pivot = new(0.5f, 0f);
         private static readonly string ZoneCachePath = Path.Combine(Plugin.Path, "Cache", "quest_zones.json");
 
-        private static List<TriggerWithId> _triggersWithIds;
+        private static List<TriggerWithId> _triggers;
         private static List<LootItem> _questItems;
-        private static readonly Dictionary<string, List<Vector3>> _questItemSpawns = new(StringComparer.Ordinal);
+        private static readonly Dictionary<string, List<Vector3>> _itemSpawns = new(StringComparer.Ordinal);
         private static Dictionary<string, Dictionary<string, List<float[]>>> _zoneCache;
         private static bool _zoneCacheLoaded;
-        private const float VisitHintRadius = 25f;
 
-        // Optional out-of-raid context (current map's locations + extract markers).
-        private static IReadOnlyList<string> _oorLocations;
-        private static MapView _oorMapView;
+        private static IReadOnlyList<string> _outOfRaidLocations;
+        private static MapCanvas _outOfRaidMap;
 
         internal static void TryCaptureQuestData()
         {
-            var gameWorld = Singleton<GameWorld>.Instance;
+            var world = Singleton<GameWorld>.Instance;
 
-            if (_triggersWithIds == null)
+            if (_triggers == null)
             {
-                _triggersWithIds = GameObject.FindObjectsOfType<TriggerWithId>().ToList();
-                PersistZoneCacheForCurrentLocation();
+                _triggers = GameObject.FindObjectsOfType<TriggerWithId>().ToList();
+                SaveZonesForCurrentLocation();
             }
 
             if (_questItems == null)
             {
-                _questItems = Traverse.Create(gameWorld)
+                _questItems = Traverse.Create(world)
                     .Field("LootItems")
                     .Field("_iteration")
                     .GetValue<List<LootItem>>()
-                    .Where(i => i.Item.QuestItem).ToList();
+                    .Where(item => item.Item.QuestItem)
+                    .ToList();
             }
 
-            RememberQuestItemSpawns();
+            RememberItemSpawns();
         }
 
         internal static void DiscardQuestData()
         {
-            if (_triggersWithIds != null)
-            {
-                _triggersWithIds.Clear();
-                _triggersWithIds = null;
-            }
-
-            if (_questItems != null)
-            {
-                _questItems.Clear();
-                _questItems = null;
-            }
-
-            _questItemSpawns.Clear();
+            _triggers?.Clear();
+            _triggers = null;
+            _questItems?.Clear();
+            _questItems = null;
+            _itemSpawns.Clear();
         }
 
         internal static IEnumerable<MapMarkerDef> GetMarkerDefsForPlayer(Player player)
         {
-            if (_triggersWithIds == null || _questItems == null)
+            if (_triggers == null || _questItems == null)
             {
-                Plugin.Log.LogWarning($"TriggersWithIds null: {_triggersWithIds == null} or QuestItems null: {_questItems == null}");
+                Plugin.Log.LogWarning($"TriggersWithIds null: {_triggers == null} or QuestItems null: {_questItems == null}");
                 return null;
             }
 
             var markers = new List<MapMarkerDef>();
-
-            var quests = GetIncompleteQuests(player);
-            foreach (var quest in quests)
+            foreach (var quest in StartedQuests(player))
             {
-                markers.AddRange(GetMarkerDefsForQuest(player, quest));
+                AddQuestMarkers(markers, player, quest);
             }
 
             return markers;
         }
 
         /// <summary>
-        /// Out-of-raid markers use profile quest progress + zone positions cached from prior raids.
-        /// Visit a map in raid once so its quest zones are recorded.
+        /// Hideout pins use profile progress and zone positions saved from a previous raid on this map.
         /// </summary>
-        internal static IEnumerable<MapMarkerDef> GetMarkerDefsOutOfRaid(Profile profile, MapDef mapDef, MapView mapView)
+        internal static IEnumerable<MapMarkerDef> GetMarkerDefsOutOfRaid(Profile profile, MapDef mapDef, MapCanvas mapView)
         {
             if (profile?.QuestsData == null || mapDef == null)
             {
                 return Array.Empty<MapMarkerDef>();
             }
 
-            EnsureZoneCacheLoaded();
-            _oorLocations = mapDef.MapInternalNames ?? [];
-            _oorMapView = mapView;
+            LoadZoneCache();
+            _outOfRaidLocations = mapDef.MapInternalNames ?? [];
+            _outOfRaidMap = mapView;
 
             try
             {
                 var markers = new List<MapMarkerDef>();
-                foreach (var quest in GetIncompleteQuestsFromProfile(profile))
+                foreach (var quest in StartedQuests(profile))
                 {
-                    markers.AddRange(GetMarkerDefsForQuest(null, quest));
+                    AddQuestMarkers(markers, null, quest);
                 }
 
                 return markers;
             }
             finally
             {
-                _oorLocations = null;
-                _oorMapView = null;
+                _outOfRaidLocations = null;
+                _outOfRaidMap = null;
             }
         }
 
-        private static IEnumerable<MapMarkerDef> GetMarkerDefsForQuest(Player player, QuestDataClass quest)
+        private static void AddQuestMarkers(List<MapMarkerDef> markers, Player player, QuestDataClass quest)
         {
-            var markers = new List<MapMarkerDef>();
-
-            var conditions = GetIncompleteQuestConditions(player, quest);
-            var completedFinds = GetCompletedFindItemTargets(player, quest);
+            var completedFinds = CompletedFindTargets(player, quest);
             var questName = quest.Template.NameLocaleKey.BsgLocalized();
-            foreach (var condition in conditions)
+
+            foreach (var condition in OpenConditions(player, quest))
             {
-                if (IsLeftoverVisitHint(condition, completedFinds))
+                if (IsLeftoverVisit(condition, completedFinds))
                 {
                     continue;
                 }
 
-                var conditionDescription = DescribeCondition(condition);
-                var positions = GetPositionsForCondition(condition, questName, conditionDescription);
-                foreach (var position in positions)
+                var description = Describe(condition);
+                foreach (var position in PositionsFor(condition))
                 {
-                    AddQuestMarker(markers, position, questName, conditionDescription);
+                    Place(markers, position, questName, description);
                 }
             }
-
-            return markers;
         }
 
-        private static IEnumerable<Vector3> GetPositionsForCondition(Condition condition, string questName,
-                                                                    string conditionDescription)
+        private static IEnumerable<Vector3> PositionsFor(Condition condition)
         {
             switch (condition)
             {
-                case ConditionZone zoneCondition:
-                {
-                    foreach (var position in GetPositionsForZoneId(zoneCondition.zoneId, questName, conditionDescription))
+                case ConditionZone zone:
+                    foreach (var position in PositionsForZone(zone.zoneId))
                     {
                         yield return position;
                     }
                     break;
-                }
-                case ConditionLaunchFlare flareCondition:
-                {
-                    foreach (var position in GetPositionsForZoneId(flareCondition.zoneID, questName, conditionDescription))
+                case ConditionLaunchFlare flare:
+                    foreach (var position in PositionsForZone(flare.zoneID))
                     {
                         yield return position;
                     }
                     break;
-                }
                 case ConditionVisitPlace place:
-                {
-                    foreach (var position in GetPositionsForZoneId(place.target, questName, conditionDescription))
+                    foreach (var position in PositionsForZone(place.target))
                     {
                         yield return position;
                     }
                     break;
-                }
-                case ConditionInZone zone:
-                {
-                    foreach (var zoneId in zone.zoneIds)
+                case ConditionInZone inside:
+                    foreach (var zoneId in inside.zoneIds)
                     {
-                        foreach (var position in GetPositionsForZoneId(zoneId, questName, conditionDescription))
+                        foreach (var position in PositionsForZone(zoneId))
                         {
                             yield return position;
                         }
                     }
                     break;
-                }
-                case ConditionFindItem findItemCondition:
-                {
-                    foreach (var position in GetPositionsForQuestItems(findItemCondition.target, questName, conditionDescription))
+                case ConditionFindItem find:
+                    foreach (var position in PositionsForItems(find.target))
                     {
                         yield return position;
                     }
                     break;
-                }
-                case ConditionExitName exitCondition:
-                {
-                    foreach (var position in GetPositionsForExit(exitCondition.exitName))
+                case ConditionExitName exit:
+                    foreach (var position in PositionsForExit(exit.exitName))
                     {
                         yield return position;
+                    }
+                    break;
+                case ConditionCounterCreator counter:
+                    var children = counter._templateConditions?.Conditions;
+                    if (children == null)
+                    {
+                        break;
                     }
 
-                    break;
-                }
-                case ConditionCounterCreator conditionCreator:
-                {
-                    // this will recurse back into this method
-                    foreach (var position in GetPositionsForConditionCreator(conditionCreator, questName, conditionDescription))
+                    foreach (var child in children)
                     {
-                        yield return position;
+                        foreach (var position in PositionsFor(child))
+                        {
+                            yield return position;
+                        }
                     }
                     break;
-                }
             }
         }
 
-        private static IEnumerable<Vector3> GetPositionsForConditionCreator(ConditionCounterCreator conditionCreator,
-                                                                            string questName, string conditionDescription)
+        private static IEnumerable<Vector3> PositionsForZone(string zoneId)
         {
-            var counter = conditionCreator._templateConditions;
-            foreach (var condition in counter.Conditions)
+            if (_triggers != null)
             {
-                foreach (var position in GetPositionsForCondition(condition, questName, conditionDescription))
+                foreach (var trigger in _triggers)
                 {
-                    yield return position;
-                }
-            }
-        }
-
-        private static IEnumerable<Vector3> GetPositionsForZoneId(string zoneId, string questName,
-                                                                  string conditionDescription)
-        {
-            if (_triggersWithIds != null)
-            {
-                var zones = _triggersWithIds.GetZoneTriggers(zoneId);
-                foreach (var zone in zones)
-                {
-                    yield return MathUtils.ConvertToMapPosition(zone.transform.position);
+                    if (trigger != null && trigger.Id == zoneId)
+                    {
+                        yield return MathUtils.ConvertToMapPosition(trigger.transform.position);
+                    }
                 }
 
                 yield break;
             }
 
-            // Out of raid: use positions cached from previous raids on this map.
-            EnsureZoneCacheLoaded();
-            if (_zoneCache == null || _oorLocations == null)
+            LoadZoneCache();
+            if (_zoneCache == null || _outOfRaidLocations == null)
             {
                 yield break;
             }
 
-            foreach (var location in _oorLocations)
+            foreach (var location in _outOfRaidLocations)
             {
-                if (!_zoneCache.TryGetValue(location, out var zonesById))
+                if (!_zoneCache.TryGetValue(location, out var zones)
+                    || !zones.TryGetValue(zoneId, out var stored))
                 {
                     continue;
                 }
 
-                if (!zonesById.TryGetValue(zoneId, out var positions))
-                {
-                    continue;
-                }
-
-                foreach (var raw in positions)
+                foreach (var raw in stored)
                 {
                     if (raw == null || raw.Length < 3)
                     {
@@ -279,72 +242,71 @@ namespace MapsExtended.Integration
             }
         }
 
-        private static IEnumerable<Vector3> GetPositionsForExit(string exitName)
+        private static IEnumerable<Vector3> PositionsForExit(string exitName)
         {
             if (string.IsNullOrEmpty(exitName))
             {
                 yield break;
             }
 
-            if (GameUtils.IsInRaid() && Singleton<GameWorld>.Instance?.ExfiltrationController?.ExfiltrationPoints != null)
+            var points = GameUtils.IsInRaid()
+                ? Singleton<GameWorld>.Instance?.ExfiltrationController?.ExfiltrationPoints
+                : null;
+            if (points != null)
             {
-                var specifiedExit = Singleton<GameWorld>.Instance.ExfiltrationController.ExfiltrationPoints
-                    .FirstOrDefault(e => e.Settings.Name == exitName);
-
-                if (specifiedExit != null)
+                var exit = points.FirstOrDefault(point => point.Settings.Name == exitName);
+                if (exit != null)
                 {
-                    yield return MathUtils.ConvertToMapPosition(specifiedExit.transform);
+                    yield return MathUtils.ConvertToMapPosition(exit.transform);
                 }
 
                 yield break;
             }
 
-            // Out of raid: match static extract markers already on the map.
-            if (_oorMapView == null)
+            if (_outOfRaidMap == null)
             {
                 yield break;
             }
 
-            foreach (var marker in _oorMapView.GetMapMarkersByCategory("Extract"))
+            foreach (var marker in _outOfRaidMap.GetMapMarkersByCategory(ExtractCategory))
             {
-                if (string.Equals(marker.Text, exitName, StringComparison.OrdinalIgnoreCase)
-                    || (!string.IsNullOrEmpty(marker.Text) && marker.Text.IndexOf(exitName, StringComparison.OrdinalIgnoreCase) >= 0)
-                    || exitName.IndexOf(marker.Text ?? "", StringComparison.OrdinalIgnoreCase) >= 0)
+                var text = marker.Text ?? "";
+                if (string.Equals(text, exitName, StringComparison.OrdinalIgnoreCase)
+                    || text.IndexOf(exitName, StringComparison.OrdinalIgnoreCase) >= 0
+                    || exitName.IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     yield return marker.Position;
                 }
             }
         }
 
-        private static IEnumerable<Vector3> GetPositionsForQuestItems(IEnumerable<string> questItemIds, string questName,
-                                                                      string conditionDescription)
+        private static IEnumerable<Vector3> PositionsForItems(IEnumerable<string> itemIds)
         {
-            // Quest item pickups only exist in the live raid scene.
-            if (_questItems == null || questItemIds == null)
+            if (_questItems == null || itemIds == null)
             {
                 yield break;
             }
 
-            foreach (var questItemId in questItemIds)
+            foreach (var itemId in itemIds)
             {
-                var questItems = _questItems.Where(i => i.TemplateId == questItemId);
-                foreach (var item in questItems)
+                foreach (var loot in _questItems)
                 {
-                    yield return MathUtils.ConvertToMapPosition(item.transform.position);
+                    if (loot != null && loot.TemplateId == itemId)
+                    {
+                        yield return MathUtils.ConvertToMapPosition(loot.transform.position);
+                    }
                 }
             }
         }
 
-        private static IEnumerable<Condition> GetIncompleteQuestConditions(Player player, QuestDataClass quest)
+        private static IEnumerable<Condition> OpenConditions(Player player, QuestDataClass quest)
         {
-            // TODO: Template.Conditions is a GClass reference
             if (quest?.Template?.Conditions == null)
             {
-                Plugin.Log.LogError($"GetIncompleteQuestConditions: quest.Template.Conditions is null, skipping quest");
+                Plugin.Log.LogError("GetIncompleteQuestConditions: quest.Template.Conditions is null, skipping quest");
                 yield break;
             }
 
-            // TODO: conditions is a GClass reference
             if (!quest.Template.Conditions.TryGetValue(EQuestStatus.AvailableForFinish, out var conditions) || conditions == null)
             {
                 Plugin.Log.LogError($"Quest {quest.Template.NameLocaleKey.BsgLocalized()} doesn't have conditions marked AvailableForFinish, skipping it");
@@ -359,56 +321,46 @@ namespace MapsExtended.Integration
                     continue;
                 }
 
-                // filter out completed conditions
-                if (IsConditionCompleted(player, quest, condition))
+                if (!IsComplete(player, quest, condition))
                 {
-                    continue;
+                    yield return condition;
                 }
-
-                yield return condition;
             }
         }
 
-        private static IEnumerable<QuestDataClass> GetIncompleteQuests(Player player)
+        private static IEnumerable<QuestDataClass> StartedQuests(Player player)
         {
-            var questController = player.QuestController;
-            if (questController == null)
+            var controller = player.QuestController;
+            if (controller == null)
             {
                 Plugin.Log.LogError($"Not able to get quests for player: {player.Id}, questController is null");
                 yield break;
             }
 
-            var quests = questController.Quests;
+            var quests = controller.Quests;
             if (quests == null)
             {
                 Plugin.Log.LogError($"Not able to get quests for player: {player.Id}, quests is null");
                 yield break;
             }
 
-            var questsList = quests.list_1;
-            if (questsList == null)
+            var list = quests.list_1;
+            if (list == null)
             {
                 Plugin.Log.LogError($"Not able to get quests for player: {player.Id}, questsList is null");
                 yield break;
             }
 
-            foreach (var quest in questsList)
+            foreach (var quest in list)
             {
-                if (quest?.Template?.Conditions == null)
+                if (quest?.Template?.Conditions != null && quest.Status == EQuestStatus.Started)
                 {
-                    continue;
+                    yield return quest;
                 }
-
-                if (quest.Status != EQuestStatus.Started)
-                {
-                    continue;
-                }
-
-                yield return quest;
             }
         }
 
-        private static IEnumerable<QuestDataClass> GetIncompleteQuestsFromProfile(Profile profile)
+        private static IEnumerable<QuestDataClass> StartedQuests(Profile profile)
         {
             if (profile?.QuestsData == null)
             {
@@ -417,34 +369,32 @@ namespace MapsExtended.Integration
 
             foreach (var quest in profile.QuestsData)
             {
-                if (quest?.Template?.Conditions == null)
+                if (quest?.Template?.Conditions != null && quest.Status == EQuestStatus.Started)
                 {
-                    continue;
+                    yield return quest;
                 }
-
-                if (quest.Status != EQuestStatus.Started)
-                {
-                    continue;
-                }
-
-                yield return quest;
             }
         }
 
-        private static bool IsConditionCompleted(Player player, QuestDataClass questData, Condition condition)
+        /// <summary>
+        /// Live progress uses the condition's compare method against the getter's current value.
+        /// That matches the quest log. IsConditionDone also demands every necessary child, and those
+        /// children often have no progress of their own, so a finished objective still looks open.
+        /// CompletedConditions can also keep an id after a quest resets on death, so the live counter wins.
+        /// </summary>
+        private static bool IsComplete(Player player, QuestDataClass quest, Condition condition)
         {
-            if (condition == null || questData == null)
+            if (condition == null || quest == null)
             {
                 return false;
             }
 
-            var live = player?.QuestController?.Quests?.GetConditional(questData.Id);
+            var live = player?.QuestController?.Quests?.GetConditional(quest.Id);
             if (live == null)
             {
-                // Out of raid there is no progress checker. Optional objectives are not stored here.
                 return condition.IsNecessary
-                       && questData.CompletedConditions != null
-                       && questData.CompletedConditions.Contains(condition.id);
+                       && quest.CompletedConditions != null
+                       && quest.CompletedConditions.Contains(condition.id);
             }
 
             if (live.IsDone())
@@ -452,10 +402,6 @@ namespace MapsExtended.Integration
                 return true;
             }
 
-            // The subtask notification uses the live counter. IsConditionDone also requires every
-            // necessary child, and those children often have no progress of their own, so a finished
-            // objective still looks open. CompletedConditions can also keep an id after a quest
-            // resets on death, so a live counter wins over that set.
             if (live.ProgressCheckers != null
                 && live.ProgressCheckers.TryGetValue(condition, out var checker)
                 && checker != null
@@ -467,7 +413,7 @@ namespace MapsExtended.Integration
             return live.CompletedConditions != null && live.CompletedConditions.Contains(condition.id);
         }
 
-        private static void RememberQuestItemSpawns()
+        private static void RememberItemSpawns()
         {
             if (_questItems == null)
             {
@@ -488,22 +434,20 @@ namespace MapsExtended.Integration
                 }
 
                 var position = MathUtils.ConvertToMapPosition(loot.transform.position);
-                if (!_questItemSpawns.TryGetValue(key, out var spawns))
+                if (!_itemSpawns.TryGetValue(key, out var spawns))
                 {
                     spawns = [];
-                    _questItemSpawns[key] = spawns;
+                    _itemSpawns[key] = spawns;
                 }
 
-                if (spawns.Any(existing => Near(existing, position, 1f)))
+                if (!spawns.Any(existing => Near(existing, position, SpawnDedupRadius)))
                 {
-                    continue;
+                    spawns.Add(position);
                 }
-
-                spawns.Add(position);
             }
         }
 
-        private static List<string> GetCompletedFindItemTargets(Player player, QuestDataClass quest)
+        private static List<string> CompletedFindTargets(Player player, QuestDataClass quest)
         {
             var targets = new List<string>();
             if (quest?.Template?.Conditions == null
@@ -515,12 +459,7 @@ namespace MapsExtended.Integration
 
             foreach (var condition in conditions)
             {
-                if (condition is not ConditionFindItem find || find.target == null)
-                {
-                    continue;
-                }
-
-                if (!IsConditionCompleted(player, quest, find))
+                if (condition is not ConditionFindItem find || find.target == null || !IsComplete(player, quest, find))
                 {
                     continue;
                 }
@@ -538,28 +477,26 @@ namespace MapsExtended.Integration
         }
 
         /// <summary>
-        /// A "go here" visit sitting on a quest item that has already been picked up.
-        /// The item marker leaves with the item, and this hint would stay on the same spot.
+        /// A visit-only counter whose zones sit within <see cref="VisitHintRadius"/> of a FindItem
+        /// spawn that is already complete. The item pin leaves when the item is picked up; this hint
+        /// would stay on the same spot. If the map opened after the pickup and no spawn was recorded,
+        /// the visit is still dropped when none of those items remain in the scene.
         /// </summary>
-        private static bool IsLeftoverVisitHint(Condition condition, List<string> completedFindTargets)
+        private static bool IsLeftoverVisit(Condition condition, List<string> completedFinds)
         {
-            if (completedFindTargets.Count == 0 || !TryGetVisitZones(condition, out var zoneIds))
+            if (completedFinds.Count == 0 || !VisitZones(condition, out var zoneIds))
             {
                 return false;
             }
 
             foreach (var zoneId in zoneIds)
             {
-                foreach (var zonePos in GetPositionsForZoneId(zoneId, null, null))
+                foreach (var zonePos in PositionsForZone(zoneId))
                 {
-                    foreach (var target in completedFindTargets)
+                    foreach (var target in completedFinds)
                     {
-                        if (!_questItemSpawns.TryGetValue(target, out var spawns))
-                        {
-                            continue;
-                        }
-
-                        if (spawns.Any(spawn => Near(spawn, zonePos, VisitHintRadius)))
+                        if (_itemSpawns.TryGetValue(target, out var spawns)
+                            && spawns.Any(spawn => Near(spawn, zonePos, VisitHintRadius)))
                         {
                             return true;
                         }
@@ -567,19 +504,16 @@ namespace MapsExtended.Integration
                 }
             }
 
-            // Map opened after the pickup, so the item's spawn was never seen.
-            // The visit hint is only there to point at that item.
-            if (completedFindTargets.Any(target =>
-                    _questItemSpawns.TryGetValue(target, out var spawns) && spawns.Count > 0))
+            if (completedFinds.Any(target => _itemSpawns.TryGetValue(target, out var spawns) && spawns.Count > 0))
             {
                 return false;
             }
 
             return _questItems == null || !_questItems.Any(loot =>
-                loot != null && completedFindTargets.Contains(loot.TemplateId.ToString()));
+                loot != null && completedFinds.Contains(loot.TemplateId.ToString()));
         }
 
-        private static bool TryGetVisitZones(Condition condition, out List<string> zoneIds)
+        private static bool VisitZones(Condition condition, out List<string> zoneIds)
         {
             zoneIds = null;
             if (condition is not ConditionCounterCreator counter)
@@ -587,14 +521,14 @@ namespace MapsExtended.Integration
                 return false;
             }
 
-            var inner = counter._templateConditions?.Conditions;
-            if (inner == null)
+            var children = counter._templateConditions?.Conditions;
+            if (children == null)
             {
                 return false;
             }
 
             var zones = new List<string>();
-            foreach (var child in inner)
+            foreach (var child in children)
             {
                 if (child is not ConditionVisitPlace visit || string.IsNullOrEmpty(visit.target))
                 {
@@ -620,9 +554,9 @@ namespace MapsExtended.Integration
             return dx * dx + dy * dy <= radius * radius;
         }
 
-        private static void PersistZoneCacheForCurrentLocation()
+        private static void SaveZonesForCurrentLocation()
         {
-            if (_triggersWithIds == null || _triggersWithIds.Count == 0)
+            if (_triggers == null || _triggers.Count == 0)
             {
                 return;
             }
@@ -633,11 +567,11 @@ namespace MapsExtended.Integration
                 return;
             }
 
-            EnsureZoneCacheLoaded();
+            LoadZoneCache();
             _zoneCache ??= new Dictionary<string, Dictionary<string, List<float[]>>>(StringComparer.OrdinalIgnoreCase);
 
             var zones = new Dictionary<string, List<float[]>>(StringComparer.OrdinalIgnoreCase);
-            foreach (var trigger in _triggersWithIds)
+            foreach (var trigger in _triggers)
             {
                 if (trigger == null || string.IsNullOrWhiteSpace(trigger.Id))
                 {
@@ -665,7 +599,7 @@ namespace MapsExtended.Integration
                 }
 
                 File.WriteAllText(ZoneCachePath, JsonConvert.SerializeObject(_zoneCache));
-                Plugin.DebugLog($"Cached {_triggersWithIds.Count} quest zone triggers for {location}");
+                Plugin.DebugLog($"Cached {_triggers.Count} quest zone triggers for {location}");
             }
             catch (Exception e)
             {
@@ -673,7 +607,7 @@ namespace MapsExtended.Integration
             }
         }
 
-        private static void EnsureZoneCacheLoaded()
+        private static void LoadZoneCache()
         {
             if (_zoneCacheLoaded)
             {
@@ -698,12 +632,7 @@ namespace MapsExtended.Integration
             _zoneCache ??= new Dictionary<string, Dictionary<string, List<float[]>>>(StringComparer.OrdinalIgnoreCase);
         }
 
-        private static IEnumerable<TriggerWithId> GetZoneTriggers(this IEnumerable<TriggerWithId> triggerWithIds, string zoneId)
-        {
-            return triggerWithIds.Where(t => t.Id == zoneId);
-        }
-
-        private static void AddQuestMarker(List<MapMarkerDef> markers, Vector3 position, string questName, string description)
+        private static void Place(List<MapMarkerDef> markers, Vector3 position, string questName, string description)
         {
             foreach (var marker in markers)
             {
@@ -714,14 +643,23 @@ namespace MapsExtended.Integration
                     continue;
                 }
 
-                AppendDescription(marker, description);
+                Append(marker, description);
                 return;
             }
 
-            markers.Add(CreateQuestMapMarkerDef(position, questName, description));
+            markers.Add(new MapMarkerDef
+            {
+                Category = Category,
+                Color = Settings.QuestColor.Value,
+                ImagePath = ImagePath,
+                Position = position,
+                Pivot = Pivot,
+                Text = questName,
+                Description = description ?? ""
+            });
         }
 
-        private static void AppendDescription(MapMarkerDef marker, string description)
+        private static void Append(MapMarkerDef marker, string description)
         {
             if (string.IsNullOrEmpty(description))
             {
@@ -734,15 +672,13 @@ namespace MapsExtended.Integration
                 return;
             }
 
-            if (marker.Description.IndexOf(description, StringComparison.Ordinal) >= 0)
+            if (marker.Description.IndexOf(description, StringComparison.Ordinal) < 0)
             {
-                return;
+                marker.Description = marker.Description + "\n" + description;
             }
-
-            marker.Description = marker.Description + "\n" + description;
         }
 
-        private static string DescribeCondition(Condition condition)
+        private static string Describe(Condition condition)
         {
             if (condition == null)
             {
@@ -752,7 +688,6 @@ namespace MapsExtended.Integration
             string text;
             try
             {
-                // Same string the quest log shows, including generated elimination and location lines.
                 text = condition.FormattedDescription;
             }
             catch (Exception e)
@@ -767,26 +702,7 @@ namespace MapsExtended.Integration
             }
 
             text = text.Trim();
-            if (text == condition.id.ToString())
-            {
-                return "";
-            }
-
-            return text;
-        }
-
-        private static MapMarkerDef CreateQuestMapMarkerDef(Vector3 position, string questName, string conditionDescription)
-        {
-            return new MapMarkerDef
-            {
-                Category = QuestCategory,
-                Color = Settings.QuestColor.Value,
-                ImagePath = QuestImagePath,
-                Position = position,
-                Pivot = QuestPivot,
-                Text = questName,
-                Description = conditionDescription ?? ""
-            };
+            return text == condition.id.ToString() ? "" : text;
         }
     }
 }

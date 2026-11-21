@@ -1,7 +1,5 @@
 using System;
 using System.Reflection;
-using MapsExtended.Core;
-using MapsExtended.Presentation;
 using SPT.Reflection.Patching;
 using EFT;
 using EFT.UI;
@@ -13,9 +11,7 @@ namespace MapsExtended.Hooks
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(EftBattleUIScreen),
-                                      nameof(EftBattleUIScreen.Show),
-                                      new Type[] { typeof(GamePlayerOwner) });
+            return AccessTools.Method(typeof(EftBattleUIScreen), nameof(EftBattleUIScreen.Show), [typeof(GamePlayerOwner)]);
         }
 
         [PatchPostfix]

@@ -2,7 +2,7 @@ using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
 using Comfort.Common;
-using DrakiaXYZ.VersionChecker;
+using MapsExtended.App;
 using MapsExtended.Config;
 using MapsExtended.Integration;
 using MapsExtended.Hooks;
@@ -68,7 +68,7 @@ namespace MapsExtended
                 return;
             }
 
-            if (!VersionChecker.CheckEftVersion(Logger, Info, Config))
+            if (!GameBuild.Matches(Logger, Config))
             {
                 throw new Exception("Invalid EFT Version");
             }
@@ -97,7 +97,6 @@ namespace MapsExtended
             new AirdropBoxOnBoxLandPatch().Enable();
             new PlayerOnDeadPatch().Enable();
             new PlayerInventoryThrowItemPatch().Enable();
-            new ShowViewButtonPatch().Enable();
             new MenuLoadPatch().Enable();
 
             Logger.LogInfo($"{Name} {BuildInfo.Version} loaded");

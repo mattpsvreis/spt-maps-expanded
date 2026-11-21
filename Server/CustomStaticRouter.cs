@@ -8,41 +8,31 @@ using SPTarkov.Server.Core.Utils;
 namespace MapsExtended;
 
 [Injectable]
-public class CustomStaticRouter : StaticRouter
+public class MapPolicyRouter : StaticRouter
 {
-    private static ServerMapPolicy? _mapPolicy;
+    private static ServerMapPolicy? _policy;
 
-    public CustomStaticRouter(
-        JsonUtil jsonUtil) : base(
-        jsonUtil,
-        GetCustomRoutes()
-    )
-    {}
-
-    public void PassConfig(ServerMapPolicy config)
+    public MapPolicyRouter(JsonUtil jsonUtil) : base(jsonUtil, Routes())
     {
-        _mapPolicy = config;
     }
 
-    private static List<RouteAction> GetCustomRoutes()
+    public void SetPolicy(ServerMapPolicy policy)
+    {
+        _policy = policy;
+    }
+
+    private static List<RouteAction> Routes()
     {
         return
         [
             new RouteAction<EmptyRequestData>(
                 "/mapsexpanded/load",
-                async (
-                    url,
-                    info,
-                    sessionId,
-                    output,
-                    token
-                ) => await HandleRoute(url, info, sessionId)
-            )
+                async (url, info, sessionId, output, token) => await Handle(url, info, sessionId))
         ];
     }
 
-    private static ValueTask<string> HandleRoute(string url, EmptyRequestData info, MongoId sessionId)
+    private static ValueTask<string> Handle(string url, EmptyRequestData info, MongoId sessionId)
     {
-        return new ValueTask<string>(JsonSerializer.Serialize(_mapPolicy));
+        return new ValueTask<string>(JsonSerializer.Serialize(_policy));
     }
 }

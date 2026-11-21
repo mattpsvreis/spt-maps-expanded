@@ -1,201 +1,143 @@
-using System.Collections.Generic;
 using System.Linq;
-using System.Net.Sockets;
 using Comfort.Common;
 using MapsExtended.Config;
 using MapsExtended.Core;
-using MapsExtended.Presentation.Overlays;
 using MapsExtended.Integration;
-using MapsExtended.Presentation;
+using MapsExtended.Presentation.Overlays;
 using EFT;
 using EFT.Interactive;
 using EFT.Interactive.SecretExfiltrations;
 
-namespace MapsExtended.Markers;
-
-public class SecretMarkerProvider : MarkerProviderBase
+namespace MapsExtended.Markers
 {
-    private const string SecretCategory = "Secret";
-    private const string SecretImagePath = "Markers/exit.png";
-
-
-    private bool _showExtractStatusInRaid = true;
-    public bool ShowExtractStatusInRaid
+    public class SecretMarkerProvider : PinSource
     {
-        get
+        private const string Icon = "Markers/exit.png";
+        private readonly PinBag<SecretExfiltrationPoint> _pins = new();
+        private bool _statusTint = true;
+
+        public bool ShowExtractStatusInRaid
         {
-            return _showExtractStatusInRaid;
+            get => _statusTint;
+            set
+            {
+                if (_statusTint == value)
+                {
+                    return;
+                }
+
+                _statusTint = value;
+                foreach (var point in _pins.Keys)
+                {
+                    Paint(point, point.Status);
+                }
+            }
         }
 
-        set
+        protected override void ShowInRaid(MapCanvas map)
         {
-            if (_showExtractStatusInRaid == value)
+            if (_pins.Count == 0)
+            {
+                foreach (var point in Singleton<GameWorld>.Instance.ExfiltrationController.SecretExfiltrationPoints)
+                {
+                    Place(point);
+                }
+            }
+
+            foreach (var point in _pins.Keys)
+            {
+                Paint(point, point.Status);
+                point.OnStatusChanged += Paint;
+            }
+        }
+
+        protected override void HideInRaid(MapCanvas map)
+        {
+            foreach (var point in _pins.Keys)
+            {
+                point.OnStatusChanged -= Paint;
+            }
+        }
+
+        protected override void EndRaid(MapCanvas map) => Clear();
+
+        protected override void MapChanged(MapCanvas map, MapDef mapDef)
+        {
+            foreach (var point in _pins.Keys.ToList())
+            {
+                Drop(point);
+                Place(point);
+            }
+        }
+
+        protected override void Disable(MapCanvas map) => Clear();
+
+        protected override void ColorsChanged(MapCanvas map)
+        {
+            foreach (var point in _pins.Keys)
+            {
+                Paint(point, point.Status);
+            }
+        }
+
+        private void Place(SecretExfiltrationPoint point)
+        {
+            if (Map == null || point == null || _pins.Has(point))
             {
                 return;
             }
 
-            _showExtractStatusInRaid = value;
-
-            // force update all statuses
-            foreach (var point in _secretMarkers.Keys)
+            _pins.Put(point, Map.AddMapMarker(new MapMarkerDef
             {
-                UpdateSecretExtractStatus(point, point.Status);
+                Category = "Secret",
+                ImagePath = Icon,
+                Text = point.Settings.Name.BsgLocalized(),
+                Position = MathUtils.ConvertToMapPosition(point.transform),
+                Color = Settings.SecretPointColor.Value
+            }));
+            Paint(point, point.Status);
+        }
+
+        private void Drop(SecretExfiltrationPoint point)
+        {
+            if (!_pins.Has(point))
+            {
+                return;
+            }
+
+            point.OnStatusChanged -= Paint;
+            _pins.Drop(point);
+        }
+
+        private void Clear()
+        {
+            foreach (var point in _pins.Keys.ToList())
+            {
+                Drop(point);
             }
         }
-    }
 
-    private Dictionary<SecretExfiltrationPoint, MapMarker> _secretMarkers = [];
-    
-    public override void OnShowInRaid(MapView map)
-    {
-        // get valid secrets only on first time that this is run in a raid
-        if (_secretMarkers.Count == 0)
+        private void Paint(ExfiltrationPoint point, EExfiltrationStatus status)
         {
-            AddSecretMarkers(map);
-        }
+            if (point is not SecretExfiltrationPoint secret || !_pins.TryGet(secret, out var marker))
+            {
+                return;
+            }
 
-        foreach (var point in _secretMarkers.Keys)
-        {
-            // update color based on exfil status
-            UpdateSecretExtractStatus(point, point.Status);
-
-            // subscribe to status changes while map is shown
-            point.OnStatusChanged += UpdateSecretExtractStatus;
-        }
-    }
-
-    public override void OnHideInRaid(MapView map)
-    {
-        foreach (var extract in _secretMarkers.Keys)
-        {
-            extract.OnStatusChanged -= UpdateSecretExtractStatus;
-        }
-    }
-
-    public override void OnRaidEnd(MapView map)
-    {
-        TryRemoveMarkers();
-    }
-
-    public override void OnMapChanged(MapView map, MapDef mapDef)
-    {
-        foreach (var point in _secretMarkers.Keys.ToList())
-        {
-            TryRemoveMarker(point);
-            TryAddMarker(map, point);
-        }
-    }
-
-    public override void OnDisable(MapView map)
-    {
-        TryRemoveMarkers();
-    }
-
-    public override void OnColorsChanged(MapView map)
-    {
-        foreach (var point in _secretMarkers.Keys)
-        {
-            UpdateSecretExtractStatus(point, point.Status);
-        }
-    }
-
-    public void RefreshMarkers(MapView map)
-    {
-        foreach (var secret in _secretMarkers.Keys.ToList())
-        {
-            TryRemoveMarker(secret);
-            TryAddMarker(map, secret);
-        }
-    }
-    
-    private void AddSecretMarkers(MapView map)
-    {
-        var gameWorld = Singleton<GameWorld>.Instance;
-        var player = GameUtils.GetMainPlayer();
-
-        IEnumerable<SecretExfiltrationPoint> secrets;
-        secrets = gameWorld.ExfiltrationController.SecretExfiltrationPoints;
-
-        // add markers, only this single time
-        foreach (var secret in secrets)
-        {
-            TryAddMarker(map, secret);
-        }
-    }
-
-    private void TryAddMarker(MapView map, SecretExfiltrationPoint point)
-    {
-        if (_secretMarkers.ContainsKey(point))
-        {
-            return;
-        }
-
-        var markerDef = new MapMarkerDef
-        {
-            Category = SecretCategory,
-            ImagePath = SecretImagePath,
-            Text = point.Settings.Name.BsgLocalized(),
-            Position = MathUtils.ConvertToMapPosition(point.transform),
-            Color = Settings.SecretPointColor.Value
-        };
-
-        var marker = map.AddMapMarker(markerDef);
-        _secretMarkers[point] = marker;
-
-
-        UpdateSecretExtractStatus(point, point.Status);
-    }
-
-    private void TryRemoveMarkers()
-    {
-        foreach (var secret in _secretMarkers.Keys.ToList())
-        {
-            TryRemoveMarker(secret);
-        }
-    }
-
-    private void UpdateSecretExtractStatus(ExfiltrationPoint point, EExfiltrationStatus status)
-    {
-        if (!_secretMarkers.ContainsKey(point as SecretExfiltrationPoint))
-        {
-            return;
-        }
-
-        var marker = _secretMarkers[point as SecretExfiltrationPoint];
-        marker.SetDescription(ExtractRequirementText.Describe(point));
-        if (!_showExtractStatusInRaid)
-        {
-            marker.Color = Settings.SecretPointColor.Value;
-            return;
-        }
-
-        switch (point.Status)
-        {
-            case EExfiltrationStatus.Hidden:
+            marker.SetDescription(ExtractRequirementText.Describe(point));
+            if (!_statusTint)
+            {
                 marker.Color = Settings.SecretPointColor.Value;
                 return;
-            case EExfiltrationStatus.UncompleteRequirements:
-                marker.Color = Settings.ExtractHasRequirementsColor.Value;
-                return;
-            case EExfiltrationStatus.Countdown:
-                marker.Color = Settings.ExtractOpenColor.Value;
-                return;
-            default:
-                marker.Color = Settings.SecretPointColor.Value;
-                break;
+            }
+
+            marker.Color = status switch
+            {
+                EExfiltrationStatus.Hidden => Settings.SecretPointColor.Value,
+                EExfiltrationStatus.UncompleteRequirements => Settings.ExtractHasRequirementsColor.Value,
+                EExfiltrationStatus.Countdown => Settings.ExtractOpenColor.Value,
+                _ => Settings.SecretPointColor.Value
+            };
         }
-    }
-
-    private void TryRemoveMarker(SecretExfiltrationPoint secret)
-    {
-        if (!_secretMarkers.ContainsKey(secret))
-        {
-            return;
-        }
-
-        secret.OnStatusChanged -= UpdateSecretExtractStatus;
-
-        _secretMarkers[secret].ContainingMapView.RemoveMapMarker(_secretMarkers[secret]);
-        _secretMarkers.Remove(secret);
     }
 }

@@ -3,329 +3,265 @@ using System.Linq;
 using Comfort.Common;
 using MapsExtended.Config;
 using MapsExtended.Core;
-using MapsExtended.Integration;
 using MapsExtended.Hooks;
+using MapsExtended.Integration;
 using MapsExtended.Presentation.Overlays;
-using MapsExtended.Presentation;
 using EFT;
 using UnityEngine;
 
 namespace MapsExtended.Markers
 {
-    public class OtherPlayersMarkerProvider : MarkerProviderBase
+    public class OtherPlayersMarkerProvider : PinSource
     {
-        private const string ArrowImagePath = "Markers/arrow.png";
-        private const string StarImagePath = "Markers/star.png";
-        
-        private const string FriendlyPlayerCategory = "Friendly Player";
-        private const string FriendlyPlayerImagePath = ArrowImagePath;
+        private const string Arrow = "Markers/arrow.png";
+        private const string Star = "Markers/star.png";
+        private readonly Dictionary<Player, PlayerMapMarker> _pins = [];
 
-        private const string EnemyPlayerCategory = "Enemy Player";
-        private const string EnemyPlayerImagePath = ArrowImagePath;
+        private bool _friendly = true;
+        private bool _enemies;
+        private bool _scavs;
+        private bool _bosses;
+        private bool _custom;
 
-        private const string ScavCategory = "Scav";
-        private const string ScavImagePath = ArrowImagePath;
-
-        private const string BossCategory = "Boss";
-        private const string BossImagePath = StarImagePath;
-        private const string NonVanillaBotCategory = "Non-Vanilla Bot";
-        
-        private bool _showFriendlyPlayers = true;
         public bool ShowFriendlyPlayers
         {
-            get => _showFriendlyPlayers;
-            set => HandleSetBoolOption(ref _showFriendlyPlayers, value);
+            get => _friendly;
+            set => Toggle(ref _friendly, value);
         }
 
-        private bool _showEnemyPlayers;
         public bool ShowEnemyPlayers
         {
-            get => _showEnemyPlayers;
-            set => HandleSetBoolOption(ref _showEnemyPlayers, value);
+            get => _enemies;
+            set => Toggle(ref _enemies, value);
         }
 
-        private bool _showScavs;
         public bool ShowScavs
         {
-            get => _showScavs;
-            set => HandleSetBoolOption(ref _showScavs, value);
+            get => _scavs;
+            set => Toggle(ref _scavs, value);
         }
 
-        private bool _showBosses;
         public bool ShowBosses
         {
-            get => _showBosses;
-            set => HandleSetBoolOption(ref _showBosses, value);
+            get => _bosses;
+            set => Toggle(ref _bosses, value);
         }
 
-        private bool _showNonVanillaBots;
         public bool ShowNonVanillaBots
         {
-            get => _showNonVanillaBots;
-            set => HandleSetBoolOption(ref _showNonVanillaBots, value);
+            get => _custom;
+            set => Toggle(ref _custom, value);
         }
 
-        private MapView _lastMapView;
-        private readonly Dictionary<Player, PlayerMapMarker> _playerMarkers = [];
-
-        public override void OnShowInRaid(MapView map)
+        protected override void ShowInRaid(MapCanvas map)
         {
-            _lastMapView = map;
-            
-            TryAddMarkers();
-            RemoveNonActivePlayers();
-
-            // register to event to get all the new ones while map is showing
-            Singleton<GameWorld>.Instance.OnPersonAdd += TryAddMarker;
-
-            // register to events to get when players die
-            GameWorldUnregisterPlayerPatch.OnUnregisterPlayer += OnUnregisterPlayer;
-            PlayerOnDeadPatch.OnDead += TryRemoveMarker;
+            PlaceAll();
+            DropDead();
+            Singleton<GameWorld>.Instance.OnPersonAdd += Place;
+            GameWorldUnregisterPlayerPatch.OnUnregisterPlayer += OnGone;
+            PlayerOnDeadPatch.OnDead += Drop;
         }
 
-        public override void OnHideInRaid(MapView map)
+        protected override void HideInRaid(MapCanvas map) => Unhook();
+
+        protected override void EndRaid(MapCanvas map)
         {
-            // unregister from events while map isn't showing
-            var gameWorld = Singleton<GameWorld>.Instance;
-            if (gameWorld is not null)
+            Unhook();
+            Clear();
+        }
+
+        protected override void MapChanged(MapCanvas map, MapDef mapDef)
+        {
+            foreach (var player in _pins.Keys.ToList())
             {
-                gameWorld.OnPersonAdd -= TryAddMarker;
-            }
-            GameWorldUnregisterPlayerPatch.OnUnregisterPlayer -= OnUnregisterPlayer;
-            PlayerOnDeadPatch.OnDead -= TryRemoveMarker;
-        }
-
-        public override void OnRaidEnd(MapView map)
-        {
-            // unregister from events since map is ending
-            var gameWorld = Singleton<GameWorld>.Instance;
-            if (gameWorld is not null)
-            {
-                gameWorld.OnPersonAdd -= TryAddMarker;
-            }
-
-            GameWorldUnregisterPlayerPatch.OnUnregisterPlayer -= OnUnregisterPlayer;
-            PlayerOnDeadPatch.OnDead -= TryRemoveMarker;
-
-            TryRemoveMarkers();
-        }
-
-        public override void OnMapChanged(MapView map, MapDef mapDef)
-        {
-            _lastMapView = map;
-
-            foreach (var player in _playerMarkers.Keys.ToList())
-            {
-                TryRemoveMarker(player);
-                TryAddMarker(player);
+                Drop(player);
+                Place(player);
             }
         }
 
-        public override void OnDisable(MapView map)
+        protected override void Disable(MapCanvas map)
         {
-            // unregister from events since provider is being disabled
-            var gameWorld = Singleton<GameWorld>.Instance;
-            if (gameWorld is not null)
-            {
-                gameWorld.OnPersonAdd -= TryAddMarker;
-            }
-
-            GameWorldUnregisterPlayerPatch.OnUnregisterPlayer -= OnUnregisterPlayer;
-            PlayerOnDeadPatch.OnDead -= TryRemoveMarker;
-
-            TryRemoveMarkers();
+            Unhook();
+            Clear();
         }
 
-        private void TryRemoveMarkers()
-        {
-            foreach (var player in _playerMarkers.Keys.ToList())
-            {
-                TryRemoveMarker(player);
-            }
-
-            _playerMarkers.Clear();
-        }
-
-        private void TryAddMarkers()
+        public void RefreshMarkers()
         {
             if (!GameUtils.IsInRaid())
             {
                 return;
             }
-            
-            // add all players that have spawned already in raid
-            var gameWorld = Singleton<GameWorld>.Instance;
-            foreach (var player in gameWorld.AllAlivePlayersList)
+
+            foreach (var player in _pins.Keys.ToList())
             {
-                if (player.IsYourPlayer || _playerMarkers.ContainsKey(player))
+                if (player.IsYourPlayer)
                 {
                     continue;
                 }
 
-                TryAddMarker(player);
+                Drop(player);
+                Place(player);
             }
         }
 
-        private void OnUnregisterPlayer(IPlayer iPlayer)
+        private void PlaceAll()
         {
-            var player = iPlayer as Player;
-            if (player is null)
+            if (!GameUtils.IsInRaid())
             {
                 return;
             }
 
-            TryRemoveMarker(player);
-        }
-
-        private void RemoveNonActivePlayers()
-        {
-            var alivePlayers = new HashSet<Player>(Singleton<GameWorld>.Instance.AllAlivePlayersList);
-            foreach (var player in _playerMarkers.Keys.ToList())
+            foreach (var player in Singleton<GameWorld>.Instance.AllAlivePlayersList)
             {
-                if (player.HasCorpse() || !alivePlayers.Contains(player))
+                if (!player.IsYourPlayer && !_pins.ContainsKey(player))
                 {
-                    TryRemoveMarker(player);
+                    Place(player);
                 }
             }
         }
 
-        public void RefreshMarkers()
+        private void Place(IPlayer person)
         {
-            if (!GameUtils.IsInRaid()) return;
-
-            foreach (var player in _playerMarkers.ToArray())
-            {
-                if (player.Key.IsYourPlayer) continue;
-                
-                TryRemoveMarker(player.Key);
-                TryAddMarker(player.Key);
-            }
-        }
-        
-        private void TryAddMarker(IPlayer iPlayer)
-        {
-            var player = iPlayer as Player;
-            if (player is null || player.IsHeadlessClient())
+            if (person is not Player player || player.IsHeadlessClient() || Map == null
+                || player.IsBtrShooter() || _pins.ContainsKey(player))
             {
                 return;
             }
 
-            if (_lastMapView is null || player.IsBtrShooter() || _playerMarkers.ContainsKey(player))
-            {
-                return;
-            }
-            
-            // set category and color
-            var category = string.Empty;
-            var imagePath = string.Empty;
+            var category = "";
+            var icon = "";
             var color = Color.clear;
-            
             if (player.IsGroupedWithMainPlayer())
             {
-                category = FriendlyPlayerCategory;
-                imagePath = FriendlyPlayerImagePath;
+                category = "Friendly Player";
+                icon = Arrow;
                 color = Settings.FriendlyPlayerColor.Value;
             }
-            // Bosses (including UNTAR leads via FactionColours) before NonVanillaBot —
-            // custom bosses are usually role>195 and would otherwise lose star/boss visibility.
             else if (player.IsTrackedBoss())
             {
-                category = BossCategory;
-                imagePath = BossImagePath;
+                category = "Boss";
+                icon = Star;
                 color = Settings.BossColor.Value;
             }
             else if (player.IsNonVanillaBot())
             {
-                category = NonVanillaBotCategory;
-                imagePath = Settings.NonVanillaBotUseStar.Value ? StarImagePath : ArrowImagePath;
+                category = "Non-Vanilla Bot";
+                icon = Settings.NonVanillaBotUseStar.Value ? Star : Arrow;
                 color = Settings.NonVanillaBotColor.Value;
             }
             else if (player.IsPmc())
             {
-                category = EnemyPlayerCategory;
-                imagePath = EnemyPlayerImagePath;
+                category = "Enemy Player";
+                icon = Arrow;
                 color = player.Side == EPlayerSide.Bear
                     ? Settings.PmcBearColor.Value
                     : Settings.PmcUsecColor.Value;
-                    
             }
             else if (player.IsScav())
             {
-                category = ScavCategory;
-                imagePath = ScavImagePath;
+                category = "Scav";
+                icon = Arrow;
                 color = Settings.ScavColor.Value;
             }
 
-            if (!ShouldShowCategory(category))
+            if (!Allowed(category))
             {
                 return;
             }
 
-            // try adding marker
-            var marker = _lastMapView.AddPlayerMarker(player, category, color, imagePath);
+            var marker = Map.AddPlayerMarker(player, category, color, icon);
             FactionColours.TryTintMarker(player, marker, color);
-            _playerMarkers[player] = marker;
+            _pins[player] = marker;
         }
 
-        private void RemoveDisabledMarkers()
+        private void OnGone(IPlayer person)
         {
-            foreach (var player in _playerMarkers.Keys.ToList())
+            if (person is Player player)
             {
-                var marker = _playerMarkers[player];
-                if (!ShouldShowCategory(marker.Category))
+                Drop(player);
+            }
+        }
+
+        private void DropDead()
+        {
+            var alive = new HashSet<Player>(Singleton<GameWorld>.Instance.AllAlivePlayersList);
+            foreach (var player in _pins.Keys.ToList())
+            {
+                if (player.HasCorpse() || !alive.Contains(player))
                 {
-                    TryRemoveMarker(player);
+                    Drop(player);
                 }
             }
         }
 
-        private void TryRemoveMarker(Player player)
+        private void Drop(Player player)
         {
-            if (!_playerMarkers.ContainsKey(player))
+            if (!_pins.TryGetValue(player, out var marker))
             {
                 return;
             }
 
-            _playerMarkers[player].ContainingMapView.RemoveMapMarker(_playerMarkers[player]);
-            _playerMarkers.Remove(player);
+            marker.ContainingMapView?.RemoveMapMarker(marker);
+            _pins.Remove(player);
         }
 
-        private bool ShouldShowCategory(string category)
+        private void Clear()
         {
-            switch (category)
+            foreach (var player in _pins.Keys.ToList())
             {
-                case FriendlyPlayerCategory:
-                    return _showFriendlyPlayers;
-                case EnemyPlayerCategory:
-                    return _showEnemyPlayers;
-                case BossCategory:
-                    return _showBosses;
-                case NonVanillaBotCategory:
-                    return _showNonVanillaBots;
-                case ScavCategory:
-                    return _showScavs;
-                default:
-                    return false;
+                Drop(player);
             }
         }
 
-        private void HandleSetBoolOption(ref bool boolOption, bool value)
+        private void DropDisabled()
         {
-            if (value == boolOption)
+            foreach (var player in _pins.Keys.ToList())
+            {
+                if (!Allowed(_pins[player].Category))
+                {
+                    Drop(player);
+                }
+            }
+        }
+
+        private bool Allowed(string category) => category switch
+        {
+            "Friendly Player" => _friendly,
+            "Enemy Player" => _enemies,
+            "Boss" => _bosses,
+            "Non-Vanilla Bot" => _custom,
+            "Scav" => _scavs,
+            _ => false
+        };
+
+        private void Toggle(ref bool option, bool value)
+        {
+            if (option == value)
             {
                 return;
             }
 
-            boolOption = value;
-
-            if (boolOption)
+            option = value;
+            if (option)
             {
-                TryAddMarkers();
+                PlaceAll();
             }
             else
             {
-                RemoveDisabledMarkers();
+                DropDisabled();
             }
         }
-}
+
+        private void Unhook()
+        {
+            var world = Singleton<GameWorld>.Instance;
+            if (world != null)
+            {
+                world.OnPersonAdd -= Place;
+            }
+
+            GameWorldUnregisterPlayerPatch.OnUnregisterPlayer -= OnGone;
+            PlayerOnDeadPatch.OnDead -= Drop;
+        }
+    }
 }

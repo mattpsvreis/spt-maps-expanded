@@ -1,9 +1,7 @@
 using System;
 using System.Reflection;
-using SPT.Reflection.Patching;
 using MapsExtended.Config;
-using MapsExtended.Core;
-using MapsExtended.Presentation;
+using SPT.Reflection.Patching;
 using EFT.UI.Map;
 using HarmonyLib;
 
@@ -23,22 +21,16 @@ namespace MapsExtended.Hooks
             {
                 if (!Settings.ReplaceMapScreen.Value)
                 {
-                    // mod is disabled
                     Plugin.Instance.Map?.OnMapScreenClose();
                     return true;
                 }
 
-                // show instead
                 Plugin.Instance.Map?.OnMapScreenShow();
                 return false;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                Plugin.Log.LogError($"Caught error while trying to show map");
-                Plugin.Log.LogError($"{e.Message}");
-                Plugin.Log.LogError($"{e.StackTrace}");
-
-                // Keep the vanilla map closed. Falling through draws it behind the inventory tabs.
+                Plugin.Log?.LogError($"Caught error while trying to show map: {e}");
                 return !Settings.ReplaceMapScreen.Value;
             }
         }
@@ -58,20 +50,15 @@ namespace MapsExtended.Hooks
             {
                 if (!Settings.ReplaceMapScreen.Value)
                 {
-                    // mod is disabled
                     return true;
                 }
 
-                // close instead
                 Plugin.Instance.Map?.OnMapScreenClose();
                 return false;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                Plugin.Log.LogError($"Caught error while trying to close map");
-                Plugin.Log.LogError($"{e.Message}");
-                Plugin.Log.LogError($"{e.StackTrace}");
-
+                Plugin.Log?.LogError($"Caught error while trying to close map: {e}");
                 return true;
             }
         }

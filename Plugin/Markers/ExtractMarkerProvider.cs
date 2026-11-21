@@ -3,165 +3,128 @@ using System.Linq;
 using Comfort.Common;
 using MapsExtended.Config;
 using MapsExtended.Core;
-using MapsExtended.Presentation.Overlays;
 using MapsExtended.Integration;
-using MapsExtended.Presentation;
+using MapsExtended.Presentation.Overlays;
 using EFT;
 using EFT.Interactive;
 using UnityEngine;
 
 namespace MapsExtended.Markers
 {
-    public class ExtractMarkerProvider : MarkerProviderBase
+    public class ExtractMarkerProvider : PinSource
     {
-        // TODO: move to config
-        private const string ExtractCategory = "Extract";
-        private const string ExtractImagePath = "Markers/exit.png";
-        //
+        private const string Icon = "Markers/exit.png";
+        private const float SameExtractRadius = 15f;
 
-        private bool _showExtractStatusInRaid = true;
+        private readonly Dictionary<ExfiltrationPoint, MapMarker> _byPoint = [];
+        private readonly Dictionary<MapMarker, List<ExfiltrationPoint>> _byMarker = [];
+        private readonly Dictionary<ExfiltrationPoint, WorldInteractiveObjectInteract> _switches = [];
+        private bool _statusTint = true;
+
         public bool ShowExtractStatusInRaid
         {
-            get
-            {
-                return _showExtractStatusInRaid;
-            }
-
+            get => _statusTint;
             set
             {
-                if (_showExtractStatusInRaid == value)
+                if (_statusTint == value)
                 {
                     return;
                 }
 
-                _showExtractStatusInRaid = value;
-
-                // force update all statuses
-                foreach (var extract in _extractMarkers.Keys)
+                _statusTint = value;
+                foreach (var extract in _byPoint.Keys)
                 {
-                    UpdateExtractStatus(extract, extract.Status);
+                    Paint(extract, extract.Status);
                 }
             }
         }
 
-        // Factory (and some other maps) drop two triggers a few meters apart for one extract.
-        // Each used to get its own icon and label, so the names drew on top of each other.
-        // Same name within this distance is one marker. A second entrance farther away stays.
-        private const float SameExtractRadius = 15f;
-
-        private readonly Dictionary<ExfiltrationPoint, MapMarker> _extractMarkers = [];
-        private readonly Dictionary<MapMarker, List<ExfiltrationPoint>> _pointsByMarker = [];
-        private readonly Dictionary<ExfiltrationPoint, WorldInteractiveObjectInteract> _switchHandlers = [];
-
-        public override void OnShowInRaid(MapView map)
+        protected override void ShowInRaid(MapCanvas map)
         {
-            // get valid extracts only on first time that this is run in a raid
-            if (_extractMarkers.Count == 0)
+            if (_byPoint.Count == 0)
             {
-                AddExtractMarkers(map);
+                PlaceAll(map);
             }
 
-            foreach (var extract in _extractMarkers.Keys)
+            foreach (var extract in _byPoint.Keys)
             {
-                // update color based on exfil status
-                UpdateExtractStatus(extract, extract.Status);
-
-                // subscribe to status changes while map is shown
-                extract.OnStatusChanged += UpdateExtractStatus;
-                SubscribeSwitches(extract);
+                Paint(extract, extract.Status);
+                extract.OnStatusChanged += Paint;
+                HookSwitches(extract);
             }
         }
 
-        public override void OnHideInRaid(MapView map)
+        protected override void HideInRaid(MapCanvas map)
         {
-            // unsubscribe from updates while map is hidden
-            foreach (var extract in _extractMarkers.Keys)
+            foreach (var extract in _byPoint.Keys)
             {
-                extract.OnStatusChanged -= UpdateExtractStatus;
-                UnsubscribeSwitches(extract);
+                extract.OnStatusChanged -= Paint;
+                UnhookSwitches(extract);
             }
         }
 
-        public override void OnRaidEnd(MapView map)
+        protected override void EndRaid(MapCanvas map) => Clear();
+
+        protected override void MapChanged(MapCanvas map, MapDef mapDef)
         {
-            TryRemoveMarkers();
+            var points = _byPoint.Keys.ToList();
+            DropMarkers();
+            Place(map, points);
         }
 
-        public override void OnMapChanged(MapView map, MapDef mapDef)
-        {
-            var points = _extractMarkers.Keys.ToList();
-            ClearMarkers();
-            PlaceExtractMarkers(map, points);
-        }
+        protected override void Disable(MapCanvas map) => Clear();
 
-        public override void OnDisable(MapView map)
+        protected override void ColorsChanged(MapCanvas map)
         {
-            TryRemoveMarkers();
-        }
-
-        public override void OnColorsChanged(MapView map)
-        {
-            foreach (var extract in _extractMarkers.Keys)
+            foreach (var extract in _byPoint.Keys)
             {
-                UpdateExtractStatus(extract, extract.Status);
+                Paint(extract, extract.Status);
             }
         }
 
-        private void AddExtractMarkers(MapView map)
+        private void PlaceAll(MapCanvas map)
         {
-            var gameWorld = Singleton<GameWorld>.Instance;
+            var world = Singleton<GameWorld>.Instance;
             var player = GameUtils.GetMainPlayer();
-
-            IEnumerable<ExfiltrationPoint> extracts;
-            if (GameUtils.IsScavRaid())
-            {
-                extracts = gameWorld.ExfiltrationController.ScavExfiltrationPoints
-                                .Where(p => p != null && p.isActiveAndEnabled && p.InfiltrationMatch(player));
-            }
-            else
-            {
-                extracts = gameWorld.ExfiltrationController.ExfiltrationPoints
-                                .Where(p => p != null && p.isActiveAndEnabled && p.InfiltrationMatch(player));
-            }
-
-            PlaceExtractMarkers(map, extracts);
+            var extracts = GameUtils.IsScavRaid()
+                ? world.ExfiltrationController.ScavExfiltrationPoints
+                    .Where(point => point != null && point.isActiveAndEnabled && point.InfiltrationMatch(player))
+                : world.ExfiltrationController.ExfiltrationPoints
+                    .Where(point => point != null && point.isActiveAndEnabled && point.InfiltrationMatch(player));
+            Place(map, extracts);
         }
 
-        private void PlaceExtractMarkers(MapView map, IEnumerable<ExfiltrationPoint> extracts)
+        private void Place(MapCanvas map, IEnumerable<ExfiltrationPoint> extracts)
         {
-            foreach (var cluster in ClusterExtracts(extracts))
+            foreach (var cluster in Cluster(extracts))
             {
-                var markerDef = new MapMarkerDef
+                var marker = map.AddMapMarker(new MapMarkerDef
                 {
-                    Category = ExtractCategory,
-                    ImagePath = ExtractImagePath,
+                    Category = "Extract",
+                    ImagePath = Icon,
                     Text = cluster[0].Settings.Name.BsgLocalized(),
-                    Position = ClusterPosition(cluster)
-                };
-
-                var marker = map.AddMapMarker(markerDef);
-                _pointsByMarker[marker] = cluster;
+                    Position = ClusterCenter(cluster)
+                });
+                _byMarker[marker] = cluster;
                 foreach (var extract in cluster)
                 {
-                    _extractMarkers[extract] = marker;
+                    _byPoint[extract] = marker;
                 }
 
-                UpdateExtractStatus(cluster[0], cluster[0].Status);
+                Paint(cluster[0], cluster[0].Status);
             }
         }
 
-        private static List<List<ExfiltrationPoint>> ClusterExtracts(IEnumerable<ExfiltrationPoint> extracts)
+        private static List<List<ExfiltrationPoint>> Cluster(IEnumerable<ExfiltrationPoint> extracts)
         {
             var pending = extracts.ToList();
             var clusters = new List<List<ExfiltrationPoint>>();
             var radiusSq = SameExtractRadius * SameExtractRadius;
-
             while (pending.Count > 0)
             {
-                var cluster = new List<ExfiltrationPoint> { pending[pending.Count - 1] };
+                var cluster = new List<ExfiltrationPoint> { pending[^1] };
                 pending.RemoveAt(pending.Count - 1);
-                var key = ExtractKey(cluster[0]);
-
+                var key = Key(cluster[0]);
                 var grew = true;
                 while (grew)
                 {
@@ -169,7 +132,7 @@ namespace MapsExtended.Markers
                     for (var i = pending.Count - 1; i >= 0; i--)
                     {
                         var candidate = pending[i];
-                        if (ExtractKey(candidate) != key || !IsNearCluster(candidate, cluster, radiusSq))
+                        if (Key(candidate) != key || !Near(candidate, cluster, radiusSq))
                         {
                             continue;
                         }
@@ -186,14 +149,14 @@ namespace MapsExtended.Markers
             return clusters;
         }
 
-        private static bool IsNearCluster(ExfiltrationPoint candidate, List<ExfiltrationPoint> cluster, float radiusSq)
+        private static bool Near(ExfiltrationPoint candidate, List<ExfiltrationPoint> cluster, float radiusSq)
         {
-            var candidatePos = MathUtils.ConvertToMapPosition(candidate.transform);
+            var pos = MathUtils.ConvertToMapPosition(candidate.transform);
             foreach (var member in cluster)
             {
-                var memberPos = MathUtils.ConvertToMapPosition(member.transform);
-                var dx = candidatePos.x - memberPos.x;
-                var dy = candidatePos.y - memberPos.y;
+                var other = MathUtils.ConvertToMapPosition(member.transform);
+                var dx = pos.x - other.x;
+                var dy = pos.y - other.y;
                 if (dx * dx + dy * dy <= radiusSq)
                 {
                     return true;
@@ -203,7 +166,7 @@ namespace MapsExtended.Markers
             return false;
         }
 
-        private static Vector3 ClusterPosition(List<ExfiltrationPoint> cluster)
+        private static Vector3 ClusterCenter(List<ExfiltrationPoint> cluster)
         {
             var sum = Vector3.zero;
             var positions = new Vector3[cluster.Count];
@@ -229,37 +192,37 @@ namespace MapsExtended.Markers
             return new Vector3(mean.x, mean.y, height);
         }
 
-        private static string ExtractKey(ExfiltrationPoint point)
+        private static string Key(ExfiltrationPoint point)
         {
             var name = point.Settings?.Name;
             return string.IsNullOrEmpty(name) ? point.GetInstanceID().ToString() : name;
         }
 
-        private void TryRemoveMarkers()
+        private void Clear()
         {
-            foreach (var extract in _extractMarkers.Keys)
+            foreach (var extract in _byPoint.Keys)
             {
-                extract.OnStatusChanged -= UpdateExtractStatus;
-                UnsubscribeSwitches(extract);
+                extract.OnStatusChanged -= Paint;
+                UnhookSwitches(extract);
             }
 
-            ClearMarkers();
+            DropMarkers();
         }
 
-        private void ClearMarkers()
+        private void DropMarkers()
         {
-            foreach (var marker in _pointsByMarker.Keys)
+            foreach (var marker in _byMarker.Keys)
             {
                 marker.ContainingMapView?.RemoveMapMarker(marker);
             }
 
-            _extractMarkers.Clear();
-            _pointsByMarker.Clear();
+            _byPoint.Clear();
+            _byMarker.Clear();
         }
 
-        private void UpdateExtractStatus(ExfiltrationPoint extract, EExfiltrationStatus status)
+        private void Paint(ExfiltrationPoint extract, EExfiltrationStatus status)
         {
-            if (!_extractMarkers.TryGetValue(extract, out var marker) || !_pointsByMarker.TryGetValue(marker, out var points))
+            if (!_byPoint.TryGetValue(extract, out var marker) || !_byMarker.TryGetValue(marker, out var points))
             {
                 return;
             }
@@ -268,7 +231,7 @@ namespace MapsExtended.Markers
             var bestRank = -1;
             foreach (var point in points)
             {
-                var rank = StatusRank(point.Status);
+                var rank = Rank(point.Status);
                 if (rank <= bestRank)
                 {
                     continue;
@@ -278,42 +241,29 @@ namespace MapsExtended.Markers
                 best = point.Status;
             }
 
-            marker.SetDescription(DescribeCluster(points, best));
-
-            if (!_showExtractStatusInRaid)
+            marker.SetDescription(Describe(points, best));
+            if (!_statusTint)
             {
                 marker.Color = Settings.ExtractDefaultColor.Value;
                 return;
             }
 
-            switch (best)
+            marker.Color = best switch
             {
-                case EExfiltrationStatus.NotPresent:
-                    marker.Color = Settings.ExtractClosedColor.Value;
-                    break;
-                case EExfiltrationStatus.UncompleteRequirements:
-                    marker.Color = Settings.ExtractHasRequirementsColor.Value;
-                    break;
-                default:
-                    marker.Color = Settings.ExtractOpenColor.Value;
-                    break;
-            }
+                EExfiltrationStatus.NotPresent => Settings.ExtractClosedColor.Value,
+                EExfiltrationStatus.UncompleteRequirements => Settings.ExtractHasRequirementsColor.Value,
+                _ => Settings.ExtractOpenColor.Value
+            };
         }
 
-        private static int StatusRank(EExfiltrationStatus status)
+        private static int Rank(EExfiltrationStatus status) => status switch
         {
-            switch (status)
-            {
-                case EExfiltrationStatus.NotPresent:
-                    return 0;
-                case EExfiltrationStatus.UncompleteRequirements:
-                    return 1;
-                default:
-                    return 2;
-            }
-        }
+            EExfiltrationStatus.NotPresent => 0,
+            EExfiltrationStatus.UncompleteRequirements => 1,
+            _ => 2
+        };
 
-        private static string DescribeCluster(List<ExfiltrationPoint> points, EExfiltrationStatus best)
+        private static string Describe(List<ExfiltrationPoint> points, EExfiltrationStatus best)
         {
             foreach (var point in points)
             {
@@ -332,18 +282,15 @@ namespace MapsExtended.Markers
             return "";
         }
 
-        // A switch chain can change the tip without changing status, such as power then the door button.
-        private void SubscribeSwitches(ExfiltrationPoint extract)
+        private void HookSwitches(ExfiltrationPoint extract)
         {
-            if (extract.Switch == null || _switchHandlers.ContainsKey(extract))
+            if (extract.Switch == null || _switches.ContainsKey(extract))
             {
                 return;
             }
 
-            WorldInteractiveObjectInteract handler =
-                (_, _, _) => UpdateExtractStatus(extract, extract.Status);
-            _switchHandlers[extract] = handler;
-
+            WorldInteractiveObjectInteract handler = (_, _, _) => Paint(extract, extract.Status);
+            _switches[extract] = handler;
             var seen = new HashSet<Switch>();
             var current = extract.Switch;
             while (current != null && seen.Add(current))
@@ -353,14 +300,14 @@ namespace MapsExtended.Markers
             }
         }
 
-        private void UnsubscribeSwitches(ExfiltrationPoint extract)
+        private void UnhookSwitches(ExfiltrationPoint extract)
         {
-            if (!_switchHandlers.TryGetValue(extract, out var handler))
+            if (!_switches.TryGetValue(extract, out var handler))
             {
                 return;
             }
 
-            _switchHandlers.Remove(extract);
+            _switches.Remove(extract);
             if (extract.Switch == null)
             {
                 return;

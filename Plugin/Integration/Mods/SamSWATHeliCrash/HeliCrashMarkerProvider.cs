@@ -1,96 +1,76 @@
-using System.Collections.Generic;
-using MapsExtended.Core;
-using MapsExtended.Presentation.Overlays;
-using MapsExtended.Integration;
-using MapsExtended.Presentation;
-using MapsExtended.Markers;
-using UnityEngine;
 using Comfort.Common;
-using EFT;
 using MapsExtended.Config;
+using MapsExtended.Core;
+using MapsExtended.Markers;
+using MapsExtended.Presentation.Overlays;
+using EFT;
+using UnityEngine;
 
 namespace MapsExtended.Integration.Mods
 {
-    public class HeliCrashMarkerProvider : MarkerProviderBase
+    public class HeliCrashMarkerProvider : PinSource
     {
-        private MapView _lastMapView;
-        private List<MapMarker> _HeliCrashMarkers = new List<MapMarker>();
+        private const string ItemId = "6223349b3136504a544d1608";
+        private const string Icon = "Markers/helicopter.png";
+        private static readonly Vector2 Pivot = new(0.5f, 0.25f);
+        private MapMarker _pin;
 
-        // TODO: move to config
-        private const string _markerName = "Crashed Helicopter";
-        private const string _markerCategory = "Airdrop";
-        private const string _markerImagePath = "Markers/helicopter.png";
-        private static Vector2 _markerPivot = new Vector2(0.5f, 0.25f);
-        //
-
-        public override void OnShowInRaid(MapView map)
+        protected override void ShowInRaid(MapCanvas map)
         {
-            _lastMapView = map;
-            // There should be only 1 crashed Heli on the Map. Therefore stop refreshing and adding markers when 1 is allready on the map
-            if (_HeliCrashMarkers.Count > 0)
+            if (_pin != null)
             {
                 return;
             }
-            TryAddMarker();
-            
-        }
-public override void OnRaidEnd(MapView map)
-        {
-            TryRemoveMarker();
+
+            Place();
         }
 
-        public override void OnMapChanged(MapView map, MapDef mapDef)
-        {
-            // Do Nothing
-        }
+        protected override void EndRaid(MapCanvas map) => Lift();
 
-        public override void OnDisable(MapView map)
-        {
-            OnRaidEnd(map);
-        }
+        protected override void Disable(MapCanvas map) => EndRaid(map);
 
-        public override void OnColorsChanged(MapView map)
+        protected override void ColorsChanged(MapCanvas map)
         {
-            var color = Settings.HeliCrashColor.Value;
-            foreach (var marker in _HeliCrashMarkers)
+            if (_pin != null)
             {
-                marker.Color = color;
+                _pin.Color = Settings.HeliCrashColor.Value;
             }
         }
 
-        private void TryAddMarker()
+        private void Place()
         {
-            var gameWorld = Singleton<GameWorld>.Instance;
-            var HeliCrashWorldItem = gameWorld.FindItemWithWorldData("6223349b3136504a544d1608");
-            var (itemData, WorldData) = HeliCrashWorldItem.Value;
-
-            if (itemData == null){
+            if (Map == null || _pin != null)
+            {
                 return;
             }
 
-            var markerDef = new MapMarkerDef
+            var found = Singleton<GameWorld>.Instance.FindItemWithWorldData(ItemId);
+            var (item, world) = found.Value;
+            if (item == null)
             {
-                Category = _markerCategory,
+                return;
+            }
+
+            _pin = Map.AddMapMarker(new MapMarkerDef
+            {
+                Category = "Airdrop",
                 Color = Settings.HeliCrashColor.Value,
-                ImagePath = _markerImagePath,
-                Position = MathUtils.ConvertToMapPosition(WorldData.Transform),
-                Pivot = _markerPivot,
-                Text = _markerName
-            };
-
-            var marker = _lastMapView.AddMapMarker(markerDef);
-            _HeliCrashMarkers.Add(marker);
+                ImagePath = Icon,
+                Position = MathUtils.ConvertToMapPosition(world.Transform),
+                Pivot = Pivot,
+                Text = "Crashed Helicopter"
+            });
         }
 
-        private void TryRemoveMarker()
+        private void Lift()
         {
-            if (_HeliCrashMarkers.Count == 0)
+            if (_pin == null)
             {
                 return;
             }
 
-            _HeliCrashMarkers[0].ContainingMapView.RemoveMapMarker(_HeliCrashMarkers[0]);
-            _HeliCrashMarkers.Remove(_HeliCrashMarkers[0]);
+            _pin.ContainingMapView?.RemoveMapMarker(_pin);
+            _pin = null;
         }
-}
+    }
 }

@@ -1,31 +1,37 @@
 using MapsExtended.Core;
-using MapsExtended.Integration;
-using MapsExtended.Presentation;
 using UnityEngine;
 
 namespace MapsExtended.Presentation.Overlays
 {
     public class TransformMapMarker : MapMarker
     {
-        private static readonly float MaxCallbackTime = 0.5f;  // how often to call callback in seconds
+        private const float CallbackSeconds = 0.5f;
         private static readonly Vector2 Pivot = new(0.5f, 0.5f);
 
-        private Transform FollowingTransform { get; set; }
+        private Transform _follow;
+        private float _wait = CallbackSeconds;
+        private bool _warned;
+
         public MathUtils.RotationAxis RotationAxis { get; set; } = MathUtils.RotationAxis.Y;
 
-        private float _callbackTime = MaxCallbackTime;  // make sure to start with a callback
-        private bool _warnedAttachedIsDisabled;
-
-        public static TransformMapMarker Create(Transform followingTransform, GameObject parent, string imagePath, Color color,
-                                                string name, string category, Vector2 size, float degreesRotation, float scale,
-                                                Sprite sprite = null)
+        public static TransformMapMarker Create(
+            Transform followingTransform,
+            GameObject parent,
+            string imagePath,
+            Color color,
+            string name,
+            string category,
+            Vector2 size,
+            float degreesRotation,
+            float scale,
+            Sprite sprite = null)
         {
-            var marker = Create<TransformMapMarker>(parent, name, category, imagePath, color,
-                                                    MathUtils.ConvertToMapPosition(followingTransform),
-                                                    size, Pivot, degreesRotation, scale, true, sprite);
+            var marker = Create<TransformMapMarker>(
+                parent, name, category, imagePath, color,
+                MathUtils.ConvertToMapPosition(followingTransform),
+                size, Pivot, degreesRotation, scale, true, sprite);
             marker.IsDynamic = true;
-            marker.FollowingTransform = followingTransform;
-
+            marker._follow = followingTransform;
             return marker;
         }
 
@@ -35,56 +41,50 @@ namespace MapsExtended.Presentation.Overlays
             ImageAlphaLayerStatus[LayerStatus.Underneath] = 0.25f;
             ImageAlphaLayerStatus[LayerStatus.OnTop] = 1f;
             ImageAlphaLayerStatus[LayerStatus.FullReveal] = 1f;
-
-            LabelAlphaLayerStatus[LayerStatus.Hidden] = 0.0f;
-            LabelAlphaLayerStatus[LayerStatus.Underneath] = 0.0f;
-            LabelAlphaLayerStatus[LayerStatus.OnTop] = 0.0f;
-            LabelAlphaLayerStatus[LayerStatus.FullReveal] = 1.00f;
+            LabelAlphaLayerStatus[LayerStatus.Hidden] = 0f;
+            LabelAlphaLayerStatus[LayerStatus.Underneath] = 0f;
+            LabelAlphaLayerStatus[LayerStatus.OnTop] = 0f;
+            LabelAlphaLayerStatus[LayerStatus.FullReveal] = 1f;
         }
 
         private void LateUpdate()
         {
-            if (FollowingTransform == null)
+            if (_follow == null)
             {
                 return;
             }
 
-            if (!FollowingTransform.gameObject.activeInHierarchy)
+            if (!_follow.gameObject.activeInHierarchy)
             {
-                if (!_warnedAttachedIsDisabled)
+                if (!_warned)
                 {
-                    Plugin.Log.LogWarning($"FollowingTransform for TransformMapMarker has been disabled without removing the map marker");
+                    Plugin.Log?.LogWarning("Follow transform for a map marker was disabled without removing the marker");
                     Color = Color.red;
-                    _warnedAttachedIsDisabled = true;
+                    _warned = true;
                 }
+
                 return;
             }
-            else
-            {
-                _warnedAttachedIsDisabled = false;
-            }
 
-            var mapPosition = MathUtils.ConvertToMapPosition(FollowingTransform);
-            var mapRotation = MathUtils.ConvertToMapRotation(FollowingTransform, RotationAxis);
-
-            // check if in exactly the same place and skip updating if it is
-            if (MathUtils.ApproxEquals(Position.x, mapPosition.x)
-             && MathUtils.ApproxEquals(Position.y, mapPosition.y)
-             && MathUtils.ApproxEquals(Position.z, mapPosition.z)
-             && MathUtils.ApproxEquals(Rotation, mapRotation))
+            _warned = false;
+            var position = MathUtils.ConvertToMapPosition(_follow);
+            var rotation = MathUtils.ConvertToMapRotation(_follow, RotationAxis);
+            if (MathUtils.ApproxEquals(Position.x, position.x)
+                && MathUtils.ApproxEquals(Position.y, position.y)
+                && MathUtils.ApproxEquals(Position.z, position.z)
+                && MathUtils.ApproxEquals(Rotation, rotation))
             {
                 return;
             }
 
-            // throttle callback, since that leads to a layer search which might be expensive
-            _callbackTime += Time.deltaTime;
-            var callback = _callbackTime >= MaxCallbackTime;
+            _wait += Time.deltaTime;
+            var callback = _wait >= CallbackSeconds;
             if (callback)
             {
-                _callbackTime = 0f;
+                _wait = 0f;
             }
 
-            MoveAndRotate(mapPosition, mapRotation, callback);
+            MoveAndRotate(position, rotation, callback);
         }
     }
 }

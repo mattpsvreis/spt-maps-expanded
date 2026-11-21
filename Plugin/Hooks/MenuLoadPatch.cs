@@ -1,20 +1,20 @@
+using System;
+using System.Reflection;
+using System.Threading.Tasks;
 using MapsExtended.Core;
 using MapsExtended.Presentation;
 using Newtonsoft.Json;
 using SPT.Common.Http;
 using SPT.Reflection.Patching;
 using SPT.Reflection.Utils;
-using System;
-using System.Reflection;
-using System.Threading.Tasks;
 using EFT.Communications;
 
 namespace MapsExtended.Hooks
 {
     internal class MenuLoadPatch : ModulePatch
     {
-        private static bool _serverConfigLoaded;
-        private static bool _loadInFlight;
+        private static bool _loaded;
+        private static bool _busy;
 
         protected override MethodBase GetTargetMethod()
         {
@@ -26,23 +26,22 @@ namespace MapsExtended.Hooks
         [PatchPostfix]
         public static async void PatchPostfix()
         {
-            if (_serverConfigLoaded || _loadInFlight)
+            if (_loaded || _busy)
             {
                 return;
             }
 
-            _loadInFlight = true;
+            _busy = true;
             try
             {
-                var config = await LoadFromServer();
-                if (config == null)
+                var policy = await FetchPolicy();
+                if (policy == null)
                 {
-                    // Leave unloaded so a later menu create can retry.
                     return;
                 }
 
-                RaidMapHost.ServerConfig = config;
-                _serverConfigLoaded = true;
+                RaidMapHost.ServerConfig = policy;
+                _loaded = true;
                 Plugin.Log?.LogInfo("Loaded Maps Expanded server config");
             }
             catch (Exception e)
@@ -52,17 +51,17 @@ namespace MapsExtended.Hooks
             }
             finally
             {
-                _loadInFlight = false;
+                _busy = false;
             }
         }
 
-        private static async Task<ServerMapPolicy> LoadFromServer()
+        private static async Task<ServerMapPolicy> FetchPolicy()
         {
             try
             {
                 var payload = await RequestHandler.GetJsonAsync("/mapsexpanded/load");
-                var config = JsonConvert.DeserializeObject<ServerMapPolicy>(payload);
-                return config ?? throw new InvalidOperationException("Server config was empty");
+                return JsonConvert.DeserializeObject<ServerMapPolicy>(payload)
+                       ?? throw new InvalidOperationException("Server config was empty");
             }
             catch (Exception ex)
             {

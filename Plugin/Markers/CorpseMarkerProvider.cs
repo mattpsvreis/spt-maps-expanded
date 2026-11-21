@@ -1,346 +1,214 @@
-using System.Collections.Generic;
 using System.Linq;
 using Comfort.Common;
 using MapsExtended.Config;
 using MapsExtended.Core;
 using MapsExtended.Hooks;
-using MapsExtended.Presentation.Overlays;
 using MapsExtended.Integration;
-using MapsExtended.Presentation;
+using MapsExtended.Presentation.Overlays;
 using EFT;
 
 namespace MapsExtended.Markers
 {
-    public class CorpseMarkerProvider : MarkerProviderBase
+    public class CorpseMarkerProvider : PinSource
     {
-        private const string SkullImagePath = "Markers/skull.png";
+        private const string Icon = "Markers/skull.png";
+        private readonly PinBag<Player> _pins = new();
 
-        // TODO: move to config
-        private const string FriendlyCorpseCategory = "Friendly Corpse";
-        private const string FriendlyCorpseImagePath = SkullImagePath;
+        private bool _friendly = true;
+        private bool _killed = true;
+        private bool _friendlyKilled = true;
+        private bool _bosses;
+        private bool _others;
 
-        private const string KilledCorpseCategory = "Killed Corpse";
-        private const string KilledCorpseImagePath = SkullImagePath;
-
-        private const string KilledBossCorpseCategory = "Killed Boss Corpse";
-        private const string KilledBossCorpseImagePath = SkullImagePath;
-
-        private const string BossCorpseCategory = "Boss Corpse";
-        private const string BossCorpseImagePath = SkullImagePath;
-
-        private const string FriendlyKilledCorpseCategory = "Friendly Killed Corpse";
-        private const string FriendlyKilledCorpseImagePath = SkullImagePath;
-
-        private const string FriendlyKilledBossCorpseCategory = "Friendly Killed Boss Corpse";
-        private const string FriendlyKilledBossCorpseImagePath = SkullImagePath;
-
-        private const string OtherCorpseCategory = "Other Corpse";
-        private const string OtherCorpseImagePath = SkullImagePath;
-        //
-
-        private bool _showFriendlyCorpses = true;
         public bool ShowFriendlyCorpses
         {
-            get
-            {
-                return _showFriendlyCorpses;
-            }
-
-            set
-            {
-                HandleSetBoolOption(ref _showFriendlyCorpses, value);
-            }
+            get => _friendly;
+            set => Toggle(ref _friendly, value);
         }
 
-        private bool _showKilledCorpses = true;
         public bool ShowKilledCorpses
         {
-            get
-            {
-                return _showKilledCorpses;
-            }
-
-            set
-            {
-                HandleSetBoolOption(ref _showKilledCorpses, value);
-            }
+            get => _killed;
+            set => Toggle(ref _killed, value);
         }
 
-        private bool _showFriendlyKilledCorpses = true;
         public bool ShowFriendlyKilledCorpses
         {
-            get
-            {
-                return _showFriendlyKilledCorpses;
-            }
-
-            set
-            {
-                HandleSetBoolOption(ref _showFriendlyKilledCorpses, value);
-            }
+            get => _friendlyKilled;
+            set => Toggle(ref _friendlyKilled, value);
         }
 
-        private bool _showBossCorpses = false;
         public bool ShowBossCorpses
         {
-            get
-            {
-                return _showBossCorpses;
-            }
-
-            set
-            {
-                HandleSetBoolOption(ref _showBossCorpses, value);
-            }
+            get => _bosses;
+            set => Toggle(ref _bosses, value);
         }
 
-        private bool _showOtherCorpses = false;
         public bool ShowOtherCorpses
         {
-            get
+            get => _others;
+            set => Toggle(ref _others, value);
+        }
+
+        protected override void ShowInRaid(MapCanvas map)
+        {
+            PlaceAll();
+            GameWorldUnregisterPlayerPatch.OnUnregisterPlayer += OnGone;
+        }
+
+        protected override void HideInRaid(MapCanvas map)
+        {
+            GameWorldUnregisterPlayerPatch.OnUnregisterPlayer -= OnGone;
+        }
+
+        protected override void EndRaid(MapCanvas map)
+        {
+            GameWorldUnregisterPlayerPatch.OnUnregisterPlayer -= OnGone;
+            _pins.Clear();
+        }
+
+        protected override void MapChanged(MapCanvas map, MapDef mapDef)
+        {
+            foreach (var corpse in _pins.Keys.ToList())
             {
-                return _showOtherCorpses;
-            }
-
-            set
-            {
-                HandleSetBoolOption(ref _showOtherCorpses, value);
-            }
-        }
-
-        private MapView _lastMapView;
-        private readonly Dictionary<Player, MapMarker> _corpseMarkers = [];
-
-        public override void OnShowInRaid(MapView map)
-        {
-            _lastMapView = map;
-            
-            TryAddMarkers();
-
-            GameWorldUnregisterPlayerPatch.OnUnregisterPlayer += OnUnregisterPlayer;
-        }
-
-        public override void OnHideInRaid(MapView map)
-        {
-            GameWorldUnregisterPlayerPatch.OnUnregisterPlayer -= OnUnregisterPlayer;
-        }
-
-        public override void OnRaidEnd(MapView map)
-        {
-            GameWorldUnregisterPlayerPatch.OnUnregisterPlayer -= OnUnregisterPlayer;
-
-            _lastMapView = map;
-            TryRemoveMarkers();
-        }
-
-        public override void OnMapChanged(MapView map, MapDef mapDef)
-        {
-            _lastMapView = map;
-
-            foreach (var corpse in _corpseMarkers.Keys.ToList())
-            {
-                TryRemoveMarker(corpse);
-                TryAddMarker(corpse);
+                _pins.Drop(corpse);
+                Place(corpse);
             }
         }
 
-        public override void OnDisable(MapView map)
+        protected override void Disable(MapCanvas map)
         {
-            GameWorldUnregisterPlayerPatch.OnUnregisterPlayer -= OnUnregisterPlayer;
-            TryRemoveMarkers();
+            GameWorldUnregisterPlayerPatch.OnUnregisterPlayer -= OnGone;
+            _pins.Clear();
         }
 
-        private void OnUnregisterPlayer(IPlayer iPlayer)
-        {
-            if (iPlayer is not Player)
-            {
-                return;
-            }
-
-            var player = iPlayer as Player;
-            if (player.HasCorpse())
-            {
-                TryAddMarker(player);
-            }
-        }
-
-        private void TryRemoveMarkers()
-        {
-            foreach (var corpse in _corpseMarkers.Keys.ToList())
-            {
-                TryRemoveMarker(corpse);
-            }
-
-            _corpseMarkers.Clear();
-        }
-
-        private void TryAddMarkers()
+        public void RefreshMarkers()
         {
             if (!GameUtils.IsInRaid())
             {
                 return;
             }
 
-            // add all players that have spawned already in raid
-            var gameWorld = Singleton<GameWorld>.Instance;
-            foreach (var player in gameWorld.AllPlayersEverExisted)
-            {
-                if (!player.HasCorpse() || _corpseMarkers.ContainsKey(player))
-                {
-                    continue;
-                }
+            _pins.Clear();
+            PlaceAll();
+        }
 
-                TryAddMarker(player);
+        private void OnGone(IPlayer person)
+        {
+            if (person is Player player && player.HasCorpse())
+            {
+                Place(player);
             }
         }
 
-        public void RefreshMarkers()
+        private void PlaceAll()
         {
-            if (!GameUtils.IsInRaid()) return;
-
-            foreach (var marker in _corpseMarkers.ToArray())
-            {
-                TryRemoveMarker(marker.Key);
-            }
-
-            var corpses = Singleton<GameWorld>.Instance.AllPlayersEverExisted
-                .Where(p => p.HasCorpse());
-            
-            foreach (var corpse in corpses)
-            {
-                TryAddMarker(corpse);
-            }
-        }
-        
-        private void TryAddMarker(Player player)
-        {
-            if (_lastMapView is null || _corpseMarkers.ContainsKey(player))
+            if (!GameUtils.IsInRaid())
             {
                 return;
             }
 
-            // set category and color
-            var category = OtherCorpseCategory;
-            var imagePath = OtherCorpseImagePath;
+            foreach (var player in Singleton<GameWorld>.Instance.AllPlayersEverExisted)
+            {
+                if (player.HasCorpse() && !_pins.Has(player))
+                {
+                    Place(player);
+                }
+            }
+        }
+
+        private void Place(Player player)
+        {
+            if (Map == null || player == null || _pins.Has(player))
+            {
+                return;
+            }
+
+            var category = "Other Corpse";
             var color = Settings.KilledOtherColor.Value;
-            
             if (player.IsGroupedWithMainPlayer())
             {
-                category = FriendlyCorpseCategory;
-                imagePath = FriendlyCorpseImagePath;
+                category = "Friendly Corpse";
                 color = Settings.FriendlyCorpseColor.Value;
             }
             else if (player.IsTrackedBoss() && player.DidMainPlayerKill())
             {
-                category = KilledBossCorpseCategory;
-                imagePath = KilledBossCorpseImagePath;
+                category = "Killed Boss Corpse";
                 color = Settings.KilledBossColor.Value;
             }
             else if (player.DidMainPlayerKill())
             {
-                category = KilledCorpseCategory;
-                imagePath = KilledCorpseImagePath;
+                category = "Killed Corpse";
                 color = Settings.KilledCorpseColor.Value;
             }
             else if (player.IsTrackedBoss() && player.DidTeammateKill())
             {
-                category = FriendlyKilledBossCorpseCategory;
-                imagePath = FriendlyKilledBossCorpseImagePath;
+                category = "Friendly Killed Boss Corpse";
                 color = Settings.KilledBossColor.Value;
             }
             else if (player.DidTeammateKill())
             {
-                category = FriendlyKilledCorpseCategory;
-                imagePath = FriendlyKilledCorpseImagePath;
+                category = "Friendly Killed Corpse";
                 color = Settings.FriendlyKilledCorpseColor.Value;
             }
             else if (player.IsTrackedBoss())
             {
-                category = BossCorpseCategory;
-                imagePath = BossCorpseImagePath;
+                category = "Boss Corpse";
                 color = Settings.KilledBossColor.Value;
             }
 
-            if (!ShouldShowCategory(category))
+            if (!Allowed(category))
             {
                 return;
             }
 
-            var markerDef = new MapMarkerDef
+            _pins.Put(player, Map.AddMapMarker(new MapMarkerDef
             {
                 Category = category,
-                ImagePath = imagePath,
+                ImagePath = Icon,
                 Text = player.Profile.GetCorrectedNickname(),
                 Color = color,
                 Position = MathUtils.ConvertToMapPosition(((IPlayer)player).Position)
-            };
-
-            // try adding marker
-            var marker = _lastMapView.AddMapMarker(markerDef);
-            _corpseMarkers[player] = marker;
+            }));
         }
 
-        private void RemoveDisabledMarkers()
+        private void DropDisabled()
         {
-            foreach (var corpse in _corpseMarkers.Keys.ToList())
+            foreach (var corpse in _pins.Keys.ToList())
             {
-                var marker = _corpseMarkers[corpse];
-                if (!ShouldShowCategory(marker.Category))
+                if (_pins.TryGet(corpse, out var marker) && !Allowed(marker.Category))
                 {
-                    TryRemoveMarker(corpse);
+                    _pins.Drop(corpse);
                 }
             }
         }
 
-        private void TryRemoveMarker(Player player)
+        private bool Allowed(string category) => category switch
         {
-            if (!_corpseMarkers.ContainsKey(player))
+            "Friendly Corpse" => _friendly,
+            "Killed Corpse" or "Killed Boss Corpse" => _killed,
+            "Friendly Killed Corpse" or "Friendly Killed Boss Corpse" => _friendlyKilled,
+            "Boss Corpse" => _bosses,
+            "Other Corpse" => _others,
+            _ => false
+        };
+
+        private void Toggle(ref bool option, bool value)
+        {
+            if (option == value)
             {
                 return;
             }
 
-            _corpseMarkers[player].ContainingMapView.RemoveMapMarker(_corpseMarkers[player]);
-            _corpseMarkers.Remove(player);
-        }
-
-        private bool ShouldShowCategory(string category)
-        {
-            switch (category)
+            option = value;
+            if (option)
             {
-                case FriendlyCorpseCategory:
-                    return _showFriendlyCorpses;
-                case KilledCorpseCategory:
-                case KilledBossCorpseCategory:
-                    return _showKilledCorpses;
-                case FriendlyKilledCorpseCategory:
-                case FriendlyKilledBossCorpseCategory:
-                    return _showFriendlyKilledCorpses;
-                case BossCorpseCategory:
-                    return _showBossCorpses;
-                case OtherCorpseCategory:
-                    return _showOtherCorpses;
-                default:
-                    return false;
-            }
-        }
-
-        private void HandleSetBoolOption(ref bool boolOption, bool value)
-        {
-            if (value == boolOption)
-            {
-                return;
-            }
-
-            boolOption = value;
-
-            if (boolOption)
-            {
-                TryAddMarkers();
+                PlaceAll();
             }
             else
             {
-                RemoveDisabledMarkers();
+                DropDisabled();
             }
         }
-}
+    }
 }

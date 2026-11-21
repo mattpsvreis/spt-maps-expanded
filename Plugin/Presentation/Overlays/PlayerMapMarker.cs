@@ -1,6 +1,4 @@
 using MapsExtended.Core;
-using MapsExtended.Integration;
-using MapsExtended.Presentation;
 using EFT;
 using UnityEngine;
 
@@ -8,23 +6,28 @@ namespace MapsExtended.Presentation.Overlays
 {
     public class PlayerMapMarker : MapMarker
     {
-        private static readonly float MaxCallbackTime = 0.5f;  // how often to call callback in seconds
-        private static readonly Vector2 Pivot = new Vector2(0.5f, 0.5f);
+        private const float CallbackSeconds = 0.5f;
+        private static readonly Vector2 Pivot = new(0.5f, 0.5f);
 
-        private IPlayer Player { get; set; }
+        private IPlayer _player;
+        private float _wait = CallbackSeconds;
 
-        private float _callbackTime = MaxCallbackTime;  // make sure to start with a callback
-
-        public static PlayerMapMarker Create(IPlayer player, GameObject parent, string imagePath, Color color, string category,
-                                             Vector2 size, float degreesRotation, float scale)
+        public static PlayerMapMarker Create(
+            IPlayer player,
+            GameObject parent,
+            string imagePath,
+            Color color,
+            string category,
+            Vector2 size,
+            float degreesRotation,
+            float scale)
         {
-            var name = $"{player.Profile.GetCorrectedNickname()}";
-            var marker = Create<PlayerMapMarker>(parent, name, category, imagePath, color,
-                                                 MathUtils.ConvertToMapPosition(player.Position),
-                                                 size, Pivot, degreesRotation, scale);
+            var marker = Create<PlayerMapMarker>(
+                parent, player.Profile.GetCorrectedNickname(), category, imagePath, color,
+                MathUtils.ConvertToMapPosition(player.Position),
+                size, Pivot, degreesRotation, scale);
             marker.IsDynamic = true;
-            marker.Player = player;
-
+            marker._player = player;
             return marker;
         }
 
@@ -34,29 +37,27 @@ namespace MapsExtended.Presentation.Overlays
             ImageAlphaLayerStatus[LayerStatus.Underneath] = 0.25f;
             ImageAlphaLayerStatus[LayerStatus.OnTop] = 1f;
             ImageAlphaLayerStatus[LayerStatus.FullReveal] = 1f;
-
-            LabelAlphaLayerStatus[LayerStatus.Hidden] = 0.0f;
-            LabelAlphaLayerStatus[LayerStatus.Underneath] = 0.0f;
-            LabelAlphaLayerStatus[LayerStatus.OnTop] = 0.0f;
-            LabelAlphaLayerStatus[LayerStatus.FullReveal] = 1.00f;
+            LabelAlphaLayerStatus[LayerStatus.Hidden] = 0f;
+            LabelAlphaLayerStatus[LayerStatus.Underneath] = 0f;
+            LabelAlphaLayerStatus[LayerStatus.OnTop] = 0f;
+            LabelAlphaLayerStatus[LayerStatus.FullReveal] = 1f;
         }
 
         private void LateUpdate()
         {
-            if (Player?.Transform?.Original == null)
+            if (_player?.Transform?.Original == null)
             {
                 return;
             }
 
-            // throttle callback, since that leads to a layer search which might be expensive
-            _callbackTime += Time.deltaTime;
-            var callback = _callbackTime >= MaxCallbackTime;
+            _wait += Time.deltaTime;
+            var callback = _wait >= CallbackSeconds;
             if (callback)
             {
-                _callbackTime = 0f;
+                _wait = 0f;
             }
 
-            MoveAndRotate(MathUtils.ConvertToMapPosition(Player.Position), -Player.Rotation.x, callback);
+            MoveAndRotate(MathUtils.ConvertToMapPosition(_player.Position), -_player.Rotation.x, callback);
         }
     }
 }

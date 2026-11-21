@@ -1,35 +1,30 @@
 using BepInEx.Bootstrap;
-using MapsExtended.Integration.Mods;
 
 namespace MapsExtended.Integration.Mods
 {
+    /// <summary>
+    /// Soft-dependency flags for optional mods that change marker or UI behaviour.
+    /// </summary>
     public static class ModDetection
     {
+        private const string HeliCrashGuid = "com.SamSWAT.HeliCrash.ArysReloaded";
+        private const string FikaGuid = "com.fika.core";
+        private const string FikaHeadlessGuid = "com.fika.headless";
+
         public static bool HeliCrashLoaded { get; private set; }
         public static bool FikaLoaded { get; private set; }
         public static bool FikaHeadlessLoaded { get; private set; }
 
         public static void CheckforMods()
         {
-            // Check for the presence of SamSwats HeliCrashSides mod
-            if (Chainloader.PluginInfos.ContainsKey("com.SamSWAT.HeliCrash.ArysReloaded"))
-            {
-                HeliCrashLoaded = true;
-            }
-            
-            // Check for the presence of Fika mod
-            if (Chainloader.PluginInfos.ContainsKey("com.fika.core"))
-            {
-                FikaLoaded = true;
-            }
-            
-            // Check for the presence of Fika Headless mod
-            if (Chainloader.PluginInfos.ContainsKey("com.fika.headless"))
-            {
-                FikaHeadlessLoaded = true;
-            }
-            
-            // Additional mod checks can be added here
+            HeliCrashLoaded = Loaded(HeliCrashGuid);
+            FikaLoaded = Loaded(FikaGuid);
+            FikaHeadlessLoaded = Loaded(FikaHeadlessGuid);
+        }
+
+        private static bool Loaded(string guid)
+        {
+            return Chainloader.PluginInfos.ContainsKey(guid);
         }
     }
 }

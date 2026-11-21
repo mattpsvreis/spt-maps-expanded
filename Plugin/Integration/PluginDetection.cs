@@ -5,8 +5,19 @@ namespace MapsExtended.Integration
     internal static class PluginDetection
     {
         internal static bool Loaded(string guid)
-            => !string.IsNullOrEmpty(guid)
-               && Chainloader.PluginInfos != null
-               && Chainloader.PluginInfos.ContainsKey(guid);
+        {
+            if (string.IsNullOrEmpty(guid))
+            {
+                return false;
+            }
+
+            var infos = Chainloader.PluginInfos;
+            if (infos == null)
+            {
+                return false;
+            }
+
+            return infos.ContainsKey(guid);
+        }
     }
 }

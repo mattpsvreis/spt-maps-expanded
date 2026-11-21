@@ -1,107 +1,75 @@
-using System.Collections.Generic;
 using System.Linq;
 using Comfort.Common;
 using MapsExtended.Config;
+using MapsExtended.Integration;
 using MapsExtended.Core;
 using MapsExtended.Presentation.Overlays;
-using MapsExtended.Integration;
-using MapsExtended.Presentation;
 using EFT;
 using EFT.Interactive;
 
-namespace MapsExtended.Markers;
-
-public class TransitMarkerProvider : MarkerProviderBase
+namespace MapsExtended.Markers
 {
-    private const string TransitCategory = "Transit";
-    private const string TransitImagePath = "Markers/transit.png";
+    public class TransitMarkerProvider : PinSource
+    {
+        private const string Icon = "Markers/transit.png";
+        private readonly PinBag<TransitPoint> _pins = new();
 
-    private readonly Dictionary<TransitPoint, MapMarker> _transitMarkers = [];
-    
-    public override void OnShowInRaid(MapView map)
-    {
-        // get valid transits only on first time that this is run in a raid
-        if (_transitMarkers.Count == 0)
+        protected override void ShowInRaid(MapCanvas map)
         {
-            AddTransitMarkers(map);
-        }
-    }
-public override void OnRaidEnd(MapView map)
-    {
-        TryRemoveMarkers();
-    }
-
-    public override void OnMapChanged(MapView map, MapDef mapDef)
-    {
-        foreach (var point in _transitMarkers.Keys.ToList())
-        {
-            TryRemoveMarker(point);
-            TryAddMarker(map, point);
-        }
-    }
-
-    public override void OnDisable(MapView map)
-    {
-        TryRemoveMarkers();
-    }
-
-    public void RefreshMarkers(MapView map)
-    {
-        foreach (var transit in _transitMarkers.Keys.ToList())
-        {
-            TryRemoveMarker(transit);
-            TryAddMarker(map, transit);
-        }
-    }
-    
-    private void AddTransitMarkers(MapView map)
-    {
-        var transitController = Singleton<GameWorld>.Instance.TransitController;
-        if (transitController != null)
-        {
-            foreach (var point in transitController.pointsById.Values)
+            if (_pins.Count > 0)
             {
-                TryAddMarker(map, point);
+                return;
+            }
+
+            var controller = Singleton<GameWorld>.Instance.TransitController;
+            if (controller == null)
+            {
+                return;
+            }
+
+            foreach (var point in controller.pointsById.Values)
+            {
+                Place(point);
             }
         }
-    }
 
-    private void TryAddMarker(MapView map, TransitPoint point)
-    {
-        if (_transitMarkers.ContainsKey(point))
+        protected override void EndRaid(MapCanvas map) => _pins.Clear();
+
+        protected override void MapChanged(MapCanvas map, MapDef mapDef)
         {
-            return;
+            foreach (var point in _pins.Keys.ToList())
+            {
+                _pins.Drop(point);
+                Place(point);
+            }
         }
 
-        var markerDef = new MapMarkerDef
-        {
-            Category = TransitCategory,
-            ImagePath = TransitImagePath,
-            Text = point.parameters.description.BsgLocalized(),
-            Position = MathUtils.ConvertToMapPosition(point.transform),
-            Color = Settings.TransPointColor.Value
-        };
+        protected override void Disable(MapCanvas map) => _pins.Clear();
 
-        var marker = map.AddMapMarker(markerDef);
-        _transitMarkers[point] = marker;
-    }
-
-    private void TryRemoveMarkers()
-    {
-        foreach (var transit in _transitMarkers.Keys.ToList())
+        public void RefreshMarkers(MapCanvas map)
         {
-            TryRemoveMarker(transit);
+            foreach (var point in _pins.Keys.ToList())
+            {
+                _pins.Drop(point);
+                Place(point);
+            }
         }
-    }
 
-    private void TryRemoveMarker(TransitPoint transit)
-    {
-        if (!_transitMarkers.ContainsKey(transit))
+        private void Place(TransitPoint point)
         {
-            return;
+            if (Map == null || point == null || _pins.Has(point))
+            {
+                return;
+            }
+
+            _pins.Put(point, Map.AddMapMarker(new MapMarkerDef
+            {
+                Category = "Transit",
+                ImagePath = Icon,
+                Text = point.parameters.description.BsgLocalized(),
+                Position = MathUtils.ConvertToMapPosition(point.transform),
+                Color = Settings.TransPointColor.Value
+            }));
         }
-        
-        _transitMarkers[transit].ContainingMapView.RemoveMapMarker(_transitMarkers[transit]);
-        _transitMarkers.Remove(transit);
     }
 }

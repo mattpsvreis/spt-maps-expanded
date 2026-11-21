@@ -14,36 +14,70 @@ using UnityEngine.UI;
 namespace MapsExtended.Integration
 {
     /// <summary>
-    /// Per-faction marker colouring for recognised custom bot packs.
-    /// Tracking / visibility stay with the core marker providers.
+    /// F12 colours for recognised custom bot packs. Marker categories still hide
+    /// soldiers through the pin board; this only changes the RGB of markers that stay visible.
     /// </summary>
     internal static class FactionColours
     {
-        internal static ConfigEntry<bool> Enabled;
-        internal static readonly Dictionary<string, ConfigEntry<Color>> Colours = new();
-        private static readonly Dictionary<int, string> Roles = new();
-        private static readonly Dictionary<int, ConfigEntry<string>> GroupOverrides = new();
-        private static ConfigFile _config;
         internal const string AutomaticGroup = "Automatic";
         internal const string NativeGroup = "Maps Expanded default";
-        private static readonly HashSet<int> UntarBossRoles = new();
-        private static readonly Dictionary<string, MemberInfo> Members = new();
-        private static readonly HashSet<string> Warnings = new();
-        private static PropertyInfo _observedAiProperty;
-        private static bool _observedAiResolved;
-        private static bool _registryAttempted;
-        private static bool _registryLoaded;
-        private static bool _initialized;
+
+        internal static ConfigEntry<bool> Enabled;
+        internal static readonly Dictionary<string, ConfigEntry<Color>> Colours = new();
+
+        private static readonly Dictionary<int, string> RoleToGroup = new();
+        private static readonly Dictionary<int, ConfigEntry<string>> RoleOverrides = new();
+        private static readonly HashSet<int> UntarBossIds = new();
+        private static readonly Dictionary<string, MemberInfo> MemberCache = new();
+        private static readonly HashSet<string> LoggedOnce = new();
+
+        private static ConfigFile _file;
+        private static PropertyInfo _observedAi;
+        private static bool _observedAiLookedUp;
+        private static bool _notedMissingApi;
+        private static bool _rolesImported;
+        private static bool _ready;
+
+        private readonly struct BuiltIn
+        {
+            internal readonly string Name;
+            internal readonly Color32 Colour;
+            internal readonly int Order;
+
+            internal BuiltIn(string name, byte r, byte g, byte b, int order)
+            {
+                Name = name;
+                Colour = new Color32(r, g, b, 255);
+                Order = order;
+            }
+        }
+
+        private static readonly BuiltIn[] Palette =
+        {
+            new("Black Division", 0x33, 0x33, 0x33, 90),
+            new("UNTAR", 0, 191, 255, 70),
+            new("RUAF", 137, 155, 69, 60),
+            new("Remnant", 0x5B, 0x80, 0x45, 50),
+            new("ISB", 0x1A, 0xFF, 0xC2, 40),
+            new("White Tusks", 232, 232, 240, 30),
+        };
+
+        // First-time defaults for roles that land as Detected - <token>.
+        private static readonly Dictionary<string, Color32> DetectedDefaults = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["Detected - chaosInsurgency"] = new Color32(0x7C, 0x50, 0x5E, 0xFF),
+            ["Detected - civilian"] = new Color32(0xFF, 0xFF, 0xFF, 0xFF),
+        };
 
         internal static void Initialize(ConfigFile config)
         {
-            if (_initialized)
+            if (_ready)
             {
                 return;
             }
 
-            _initialized = true;
-            _config = config;
+            _ready = true;
+            _file = config;
             Enabled = config.Bind(
                 "8. Faction Colours",
                 "Enable faction colours",
@@ -52,79 +86,102 @@ namespace MapsExtended.Integration
                     "Colour recognised addon factions, such as Black Division, UNTAR, RUAF, and ISB. Hiding a marker category in What to show still hides them.",
                     null,
                     new ConfigurationManagerAttributes { Order = 100 }));
+            Enabled.SettingChanged += OnSettingChanged;
 
-            Bind(config, "Black Division", new Color32(119, 119, 119, 255), 90);
-            Bind(config, "UNTAR", new Color32(0, 191, 255, 255), 70);
-            Bind(config, "RUAF", new Color32(137, 155, 69, 255), 60);
-            Bind(config, "Remnant", new Color32(137, 155, 69, 255), 50);
-            Bind(config, "ISB", new Color32(26, 188, 156, 255), 40);
-            Bind(config, "White Tusks", new Color32(232, 232, 240, 255), 30);
+            foreach (var swatch in Palette)
+            {
+                BindColour(swatch.Name, swatch.Colour, swatch.Order);
+            }
 
-            Enabled.SettingChanged += SettingsChanged;
-            TryReadRegistry();
-            Plugin.Log?.LogInfo("[MapsExpanded] Faction colour support ready.");
+            ImportRoles();
+            Plugin.Log?.LogInfo("[MapsExpanded] Faction colours ready.");
         }
+
+        internal static void Shutdown() => FactionMarkerTint.RestoreAll();
 
         internal static bool IsUntarBossRole(IPlayer player)
         {
             try
             {
-                if (player?.Profile == null || !IsBot(player) || player.Profile.Side != EPlayerSide.Savage)
+                if (!LooksLikeBot(player) || player.Profile.Side != EPlayerSide.Savage)
                 {
                     return false;
                 }
 
-                TryReadRegistry();
+                ImportRoles();
                 var role = player.Profile.Info.Settings.Role;
-                return UntarBossRoles.Contains((int)role) || FactionRolePolicy.IsUntarBoss(role.ToString());
+                return UntarBossIds.Contains((int)role) || FactionRolePolicy.IsUntarBoss(role.ToString());
             }
             catch (Exception ex)
             {
-                Warn("untar-boss", ex);
+                Note("untar-boss", ex);
                 return false;
             }
         }
 
         /// <summary>
-        /// Attaches a faction tint after a player marker is created.
-        /// Tint respects the Enabled toggle at apply-time so F12 changes refresh live.
+        /// Pins a live tint onto a player marker. The Enabled toggle is read when the tint
+        /// is applied, so an F12 change updates markers that are already on the map.
         /// </summary>
         internal static bool TryTintMarker(IPlayer player, PlayerMapMarker marker, Color nativeColour)
         {
             try
             {
-                if (marker == null || player?.Profile == null || !IsBot(player))
+                if (marker == null || !LooksLikeBot(player))
                 {
                     return false;
                 }
 
-                TryReadRegistry();
+                ImportRoles();
                 var role = player.Profile.Info.Settings.Role;
-                var id = (int)role;
-                if (!Roles.TryGetValue(id, out var faction))
+                var roleId = (int)role;
+                if (!RoleToGroup.TryGetValue(roleId, out var group))
                 {
-                    faction = FactionRolePolicy.Resolve(role.ToString(), null);
+                    group = FactionRolePolicy.Resolve(role.ToString(), null);
                 }
 
-                if (faction == null)
+                if (group == null)
                 {
                     return false;
                 }
 
-                var tint = marker.GetComponent<FactionMarkerTint>() ?? marker.gameObject.AddComponent<FactionMarkerTint>();
-                tint.Initialize(marker.Image, marker.Label, faction, nativeColour, id);
+                var tint = marker.GetComponent<FactionMarkerTint>();
+                if (tint == null)
+                {
+                    tint = marker.gameObject.AddComponent<FactionMarkerTint>();
+                }
+
+                tint.Initialize(marker.Image, marker.Label, group, nativeColour, roleId);
                 return true;
             }
             catch (Exception ex)
             {
-                Warn("marker-tint", ex);
+                Note("marker-tint", ex);
                 return false;
             }
         }
 
-        private static bool IsBot(IPlayer player)
+        internal static string ResolveGroup(int roleId, string fallback)
         {
-            if (player == null)
+            if (RoleOverrides.TryGetValue(roleId, out var choice))
+            {
+                if (choice.Value == NativeGroup)
+                {
+                    return null;
+                }
+
+                if (choice.Value != AutomaticGroup && Colours.ContainsKey(choice.Value))
+                {
+                    return choice.Value;
+                }
+            }
+
+            return RoleToGroup.TryGetValue(roleId, out var mapped) ? mapped : fallback;
+        }
+
+        private static bool LooksLikeBot(IPlayer player)
+        {
+            if (player?.Profile == null)
             {
                 return false;
             }
@@ -134,16 +191,16 @@ namespace MapsExtended.Integration
                 return true;
             }
 
-            if (!_observedAiResolved)
+            if (!_observedAiLookedUp)
             {
-                _observedAiResolved = true;
-                _observedAiProperty = AccessTools.Property(player.GetType(), "IsObservedAI")
+                _observedAiLookedUp = true;
+                _observedAi = AccessTools.Property(player.GetType(), "IsObservedAI")
                     ?? AccessTools.Property(typeof(IPlayer), "IsObservedAI");
             }
 
             try
             {
-                return _observedAiProperty?.GetValue(player) is bool observed && observed;
+                return _observedAi != null && _observedAi.GetValue(player) is true;
             }
             catch
             {
@@ -151,9 +208,9 @@ namespace MapsExtended.Integration
             }
         }
 
-        private static void Bind(ConfigFile config, string name, Color colour, int order)
+        private static void BindColour(string name, Color colour, int order)
         {
-            var entry = config.Bind(
+            var entry = _file.Bind(
                 "8. Faction Colours",
                 name,
                 colour,
@@ -162,12 +219,12 @@ namespace MapsExtended.Integration
                     null,
                     new ConfigurationManagerAttributes { Order = order }));
             Colours[name] = entry;
-            entry.SettingChanged += SettingsChanged;
+            entry.SettingChanged += OnSettingChanged;
         }
 
-        private static void SettingsChanged(object sender, EventArgs args) => FactionMarkerTint.RefreshAll();
+        private static void OnSettingChanged(object sender, EventArgs args) => FactionMarkerTint.RefreshAll();
 
-        private static object Read(object target, string name)
+        private static object Member(object target, string name)
         {
             if (target == null)
             {
@@ -176,19 +233,27 @@ namespace MapsExtended.Integration
 
             var type = target.GetType();
             var key = type.AssemblyQualifiedName + "|" + name;
-            if (!Members.TryGetValue(key, out var member))
+            if (!MemberCache.TryGetValue(key, out var member))
             {
-                member = (MemberInfo)type.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                    ?? type.GetProperty(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                Members[key] = member;
+                const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+                member = (MemberInfo)type.GetField(name, flags) ?? type.GetProperty(name, flags);
+                MemberCache[key] = member;
             }
 
-            return member is PropertyInfo p ? p.GetValue(target) : (member as FieldInfo)?.GetValue(target);
+            switch (member)
+            {
+                case PropertyInfo property:
+                    return property.GetValue(target);
+                case FieldInfo field:
+                    return field.GetValue(target);
+                default:
+                    return null;
+            }
         }
 
-        private static void TryReadRegistry()
+        private static void ImportRoles()
         {
-            if (_registryLoaded)
+            if (_rolesImported)
             {
                 return;
             }
@@ -196,119 +261,124 @@ namespace MapsExtended.Integration
             var manager = AccessTools.TypeByName("MoreBotsAPI.CustomWildSpawnTypeManager");
             if (manager == null)
             {
-                // Soft dependency may load later — allow another attempt next call.
-                if (!_registryAttempted)
+                if (!_notedMissingApi)
                 {
-                    _registryAttempted = true;
-                    Plugin.Log?.LogInfo("[MapsExpanded] MoreBotsAPI absent; using known role-name fallback for faction colours.");
+                    _notedMissingApi = true;
+                    Plugin.Log?.LogInfo("[MapsExpanded] MoreBotsAPI is not loaded; faction colours use known role names.");
                 }
 
                 return;
             }
 
-            _registryAttempted = true;
-
             try
             {
                 var getter = AccessTools.Method(manager, "GetCustomWildSpawnTypes");
-                if (getter == null || getter.Invoke(null, null) is not IEnumerable entries)
+                if (getter?.Invoke(null, null) is not IEnumerable rows)
                 {
-                    _registryLoaded = true;
+                    _rolesImported = true;
                     return;
                 }
 
-                var discovered = new List<(int id, string role, string metadata)>();
-                foreach (var entry in entries)
+                var found = new List<RoleRow>();
+                foreach (var row in rows)
                 {
                     try
                     {
-                        var role = Read(entry, "WildSpawnTypeName") as string;
-                        if (string.IsNullOrWhiteSpace(role))
+                        if (Member(row, "WildSpawnTypeName") is not string role || string.IsNullOrWhiteSpace(role))
                         {
                             continue;
                         }
 
-                        var id = Convert.ToInt32(Read(entry, "WildSpawnTypeValue"));
-                        var group = Read(entry, "ScavRole") as string;
-                        discovered.Add((id, role, group));
+                        found.Add(new RoleRow(
+                            Convert.ToInt32(Member(row, "WildSpawnTypeValue")),
+                            role,
+                            Member(row, "ScavRole") as string));
                     }
                     catch (Exception ex)
                     {
-                        Warn("registry-entry", ex);
+                        Note("registry-entry", ex);
                     }
                 }
 
-                foreach (var bot in discovered.OrderBy(x => x.role, StringComparer.Ordinal))
+                found.Sort((a, b) => string.CompareOrdinal(a.Role, b.Role));
+                foreach (var bot in found)
                 {
-                    if (Roles.ContainsKey(bot.id))
+                    if (RoleToGroup.ContainsKey(bot.Id))
                     {
                         continue;
                     }
 
-                    var faction = FactionRolePolicy.Resolve(bot.role, bot.metadata) ?? ("Detected - " + ConfigName(bot.role));
-                    if (!Colours.ContainsKey(faction))
+                    var group = FactionRolePolicy.Resolve(bot.Role, bot.ScavRole)
+                        ?? "Detected - " + ConfigToken(bot.Role);
+                    if (!Colours.ContainsKey(group))
                     {
-                        Bind(_config, faction, GeneratedColour(bot.role), 0);
+                        var colour = DetectedDefaults.TryGetValue(group, out var preferred)
+                            ? (Color)preferred
+                            : ColourFromRole(bot.Role);
+                        BindColour(group, colour, 0);
                     }
 
-                    Roles[bot.id] = faction;
-                    if (FactionRolePolicy.IsUntarBoss(bot.role))
+                    RoleToGroup[bot.Id] = group;
+                    if (FactionRolePolicy.IsUntarBoss(bot.Role))
                     {
-                        UntarBossRoles.Add(bot.id);
+                        UntarBossIds.Add(bot.Id);
                     }
                 }
 
-                var choices = new[] { AutomaticGroup, NativeGroup }
-                    .Concat(Colours.Keys.OrderBy(x => x, StringComparer.Ordinal))
-                    .ToArray();
+                var options = new List<string> { AutomaticGroup, NativeGroup };
+                options.AddRange(Colours.Keys.OrderBy(name => name, StringComparer.Ordinal));
+                var list = new AcceptableValueList<string>(options.ToArray());
 
-                foreach (var bot in discovered.OrderBy(x => x.role, StringComparer.Ordinal))
+                foreach (var bot in found)
                 {
-                    if (GroupOverrides.ContainsKey(bot.id))
+                    if (RoleOverrides.ContainsKey(bot.Id))
                     {
                         continue;
                     }
 
-                    var entry = _config.Bind(
+                    var entry = _file.Bind(
                         "8a. Dynamic faction grouping",
-                        "Group with - " + ConfigName(bot.role),
+                        "Group with - " + ConfigToken(bot.Role),
                         AutomaticGroup,
                         new ConfigDescription(
-                            $"Automatic uses {Roles[bot.id]}. Pick another faction to share its colour, or Maps Expanded default to keep the normal marker colour.",
-                            new AcceptableValueList<string>(choices)));
-                    GroupOverrides[bot.id] = entry;
-                    entry.SettingChanged += SettingsChanged;
+                            $"Automatic uses {RoleToGroup[bot.Id]}. Pick another faction to share its colour, or Maps Expanded default to keep the normal marker colour.",
+                            list));
+                    RoleOverrides[bot.Id] = entry;
+                    entry.SettingChanged += OnSettingChanged;
                 }
 
-                _registryLoaded = true;
-                Plugin.Log?.LogInfo($"[MapsExpanded] Discovered {discovered.Count} custom roles across {Colours.Count} colour groups.");
+                _rolesImported = true;
+                Plugin.Log?.LogInfo($"[MapsExpanded] Faction colours: {found.Count} custom roles, {Colours.Count} groups.");
             }
             catch (Exception ex)
             {
-                // Keep retryable on transient failures; permanent API mismatches still warn once.
-                Warn("registry", ex);
+                Note("registry", ex);
             }
         }
 
-        private static string ConfigName(string value)
+        /// <summary>
+        /// BepInEx setting ids cannot contain every character a role name might.
+        /// Letters, digits, '-' and '_' stay as-is; anything else becomes ~XXXX.
+        /// </summary>
+        private static string ConfigToken(string value)
         {
-            var result = new StringBuilder();
+            var builder = new StringBuilder(value.Length);
             foreach (var c in value)
             {
                 if (char.IsLetterOrDigit(c) || c == '-' || c == '_')
                 {
-                    result.Append(c);
+                    builder.Append(c);
                 }
                 else
                 {
-                    result.Append('~').Append(((int)c).ToString("X4"));
+                    builder.Append('~').Append(((int)c).ToString("X4"));
                 }
             }
 
-            return result.ToString();
+            return builder.ToString();
         }
 
-        private static Color GeneratedColour(string role)
+        private static Color ColourFromRole(string role)
         {
             uint hash = 2166136261;
             foreach (var c in role)
@@ -317,65 +387,63 @@ namespace MapsExtended.Integration
             }
 
             return new Color32(
-                (byte)(80 + hash % 160),
-                (byte)(80 + (hash >> 8) % 160),
-                (byte)(80 + (hash >> 16) % 160),
+                (byte)(80 + (hash % 160)),
+                (byte)(80 + ((hash >> 8) % 160)),
+                (byte)(80 + ((hash >> 16) % 160)),
                 255);
         }
 
-        internal static string ResolveGroup(int id, string fallback)
+        private static void Note(string key, Exception ex)
         {
-            if (GroupOverrides.TryGetValue(id, out var entry))
+            if (LoggedOnce.Add(key))
             {
-                if (entry.Value == NativeGroup)
-                {
-                    return null;
-                }
-
-                if (entry.Value != AutomaticGroup && Colours.ContainsKey(entry.Value))
-                {
-                    return entry.Value;
-                }
-            }
-
-            return Roles.TryGetValue(id, out var group) ? group : fallback;
-        }
-
-        internal static void Warn(string key, Exception ex)
-        {
-            if (Warnings.Add(key))
-            {
-                Plugin.Log?.LogWarning($"[MapsExtended:Factions] {key}: {ex.Message}");
+                Plugin.Log?.LogWarning($"[MapsExpanded] Faction colours ({key}): {ex.Message}");
             }
         }
 
-        internal static void Shutdown() => FactionMarkerTint.RestoreAll();
+        private readonly struct RoleRow
+        {
+            internal readonly int Id;
+            internal readonly string Role;
+            internal readonly string ScavRole;
+
+            internal RoleRow(int id, string role, string scavRole)
+            {
+                Id = id;
+                Role = role;
+                ScavRole = scavRole;
+            }
+        }
     }
 
     internal sealed class FactionMarkerTint : MonoBehaviour
     {
-        private static readonly HashSet<FactionMarkerTint> Active = new();
+        private static readonly List<FactionMarkerTint> Live = new();
+
         private Image _image;
         private Graphic _label;
-        private string _faction;
-        private Color _native;
+        private string _group;
+        private Color _floorColour;
         private int _roleId;
 
         internal void Initialize(Image image, Graphic label, string faction, Color native, int roleId)
         {
             _image = image;
             _label = label;
-            _faction = faction;
-            _native = native;
+            _group = faction;
+            _floorColour = native;
             _roleId = roleId;
-            Active.Add(this);
+            if (!Live.Contains(this))
+            {
+                Live.Add(this);
+            }
+
             Apply();
         }
 
         internal void NativeColourChanged(Color colour)
         {
-            // Preserve the latest floor/alpha drive from MapMarker; Apply re-applies faction RGB.
-            _native = colour;
+            _floorColour = colour;
             Apply();
         }
 
@@ -386,23 +454,24 @@ namespace MapsExtended.Integration
                 return;
             }
 
-            var group = FactionColours.ResolveGroup(_roleId, _faction);
-            ConfigEntry<Color> entry = null;
-            var enabled = !restore
-                          && FactionColours.Enabled != null
-                          && FactionColours.Enabled.Value
-                          && group != null
-                          && FactionColours.Colours.TryGetValue(group, out entry);
+            var colour = _floorColour;
+            var group = FactionColours.ResolveGroup(_roleId, _group);
+            if (!restore
+                && FactionColours.Enabled is { Value: true }
+                && group != null
+                && FactionColours.Colours.TryGetValue(group, out var entry))
+            {
+                colour = entry.Value;
+            }
 
-            var colour = enabled ? entry.Value : _native;
-            SetRgb(_image, colour);
+            Paint(_image, colour);
             if (_label != null)
             {
-                SetRgb(_label, colour);
+                Paint(_label, colour);
             }
         }
 
-        private static void SetRgb(Graphic graphic, Color colour)
+        private static void Paint(Graphic graphic, Color colour)
         {
             colour.a = graphic.color.a;
             if (graphic.color != colour)
@@ -411,38 +480,32 @@ namespace MapsExtended.Integration
             }
         }
 
-        internal static void RefreshAll()
+        internal static void RefreshAll() => Visit(restore: false);
+
+        internal static void RestoreAll() => Visit(restore: true);
+
+        private static void Visit(bool restore)
         {
-            Active.RemoveWhere(tint => tint == null);
-            foreach (var tint in Active.ToArray())
+            for (var i = Live.Count - 1; i >= 0; i--)
             {
+                var tint = Live[i];
+                if (tint == null)
+                {
+                    Live.RemoveAt(i);
+                    continue;
+                }
+
                 try
                 {
-                    tint.Apply();
+                    tint.Apply(restore);
                 }
                 catch (Exception ex)
                 {
-                    FactionColours.Warn("refresh", ex);
+                    Plugin.Log?.LogWarning($"[MapsExpanded] Faction tint: {ex.Message}");
                 }
             }
         }
 
-        internal static void RestoreAll()
-        {
-            Active.RemoveWhere(tint => tint == null);
-            foreach (var tint in Active.ToArray())
-            {
-                try
-                {
-                    tint.Apply(true);
-                }
-                catch (Exception ex)
-                {
-                    FactionColours.Warn("restore", ex);
-                }
-            }
-        }
-
-        private void OnDestroy() => Active.Remove(this);
+        private void OnDestroy() => Live.Remove(this);
     }
 }

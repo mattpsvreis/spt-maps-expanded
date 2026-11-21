@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using MapsExtended.App;
 using EFT.Airdrop;
 using EFT.SynchronizableObjects;
 using SPT.Reflection.Patching;
@@ -12,33 +13,29 @@ namespace MapsExtended.Hooks
     {
         internal static event Action<AirdropSynchronizableObject> OnAirdropLanded;
         internal static List<AirdropSynchronizableObject> Airdrops = [];
-
-        private bool _hasRegisteredEvents = false;
+        private bool _hooked;
 
         protected override MethodBase GetTargetMethod()
         {
-            if (!_hasRegisteredEvents)
+            if (!_hooked)
             {
-                GameWorldOnDestroyPatch.OnRaidEnd += OnRaidEnd;
-                _hasRegisteredEvents = true;
+                RaidEvents.RaidEnded += () => Airdrops.Clear();
+                _hooked = true;
             }
-            // thanks to TechHappy for the breadcrumb of what method to patch
+
             return AccessTools.Method(typeof(ClientAirDrop), nameof(ClientAirDrop.CloseParachute));
         }
 
         [PatchPostfix]
         public static void PatchPostfix(ClientAirDrop __instance)
         {
-            if (__instance != null && !Airdrops.Contains(__instance._syncObject))
+            if (__instance == null || Airdrops.Contains(__instance._syncObject))
             {
-                Airdrops.Add(__instance._syncObject);
-                OnAirdropLanded?.Invoke(__instance._syncObject);
+                return;
             }
-        }
 
-        internal static void OnRaidEnd()
-        {
-            Airdrops.Clear();
+            Airdrops.Add(__instance._syncObject);
+            OnAirdropLanded?.Invoke(__instance._syncObject);
         }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using Comfort.Common;
+using MapsExtended.App;
 using MapsExtended.Config;
 using MapsExtended.Core;
 using MapsExtended.Hooks;
@@ -25,13 +26,13 @@ namespace MapsExtended.Presentation
         private const float PositionTextFontSize = 15f;
 
         private readonly Vector3[] _maskCorners = new Vector3[4];
-        private readonly MapModeController _modes = new();
-        private readonly MarkerOrchestrator _markers = new();
+        private readonly MapSession _session = new();
+        private readonly PinBoard _pins = new();
         private readonly MapCatalog _catalog = new();
 
         private MapScrollRect _scrollRect;
         private Mask _scrollMask;
-        private MapView _mapView;
+        private MapCanvas _mapView;
         private LevelSelectSlider _levelSelectSlider;
         private MapSelectDropdown _mapSelectDropdown;
         private CursorPositionText _cursorPositionText;
@@ -42,8 +43,8 @@ namespace MapsExtended.Presentation
         private RectTransform RectTransform => gameObject.GetRectTransform();
         private RectTransform ParentTransform => transform.parent as RectTransform;
 
-        internal MapView MapView => _mapView;
-        internal MapDisplayMode DisplayMode => _modes.Mode;
+        internal MapCanvas MapCanvas => _mapView;
+        internal MapDisplayMode DisplayMode => _session.Surface;
         public bool IsShowingMapScreen { get; private set; }
         public static ServerMapPolicy ServerConfig;
 
@@ -58,7 +59,7 @@ namespace MapsExtended.Presentation
             var scrollRectGo = UIUtils.CreateUIGameObject(gameObject, "Scroll");
             var scrollMaskGo = UIUtils.CreateUIGameObject(scrollRectGo, "ScrollMask");
 
-            _mapView = MapView.Create(scrollMaskGo, "MapView");
+            _mapView = MapCanvas.Create(scrollMaskGo, "MapCanvas");
 
             var scrollMaskImage = scrollMaskGo.AddComponent<Image>();
             scrollMaskImage.color = new Color(0f, 0f, 0f, 0.5f);
@@ -72,18 +73,18 @@ namespace MapsExtended.Presentation
             _scrollRect.content = _mapView.RectTransform;
             _scrollRect.OnDragCallback = () =>
             {
-                if (!_modes.ApplyingViewportState && !_modes.ChangingMode && !_modes.IsTransitioning
-                    && _modes.Mode == MapDisplayMode.Main)
+                if (!_session.WritingCamera && !_session.Switching && !_session.Gliding
+                    && _session.Surface == MapDisplayMode.Main)
                 {
-                    _modes.Main.AcceptDrag(_mapView);
-                    ApplyDisplayedViewportState(_modes.Main.State);
+                    _session.Inventory.AcceptDrag(_mapView);
+                    ApplyDisplayedViewportState(_session.Inventory.State);
                 }
             };
             _scrollRect.OnBeginDragCallback = () =>
             {
-                if (_modes.Mode == MapDisplayMode.Main && !_modes.IsTransitioning)
+                if (_session.Surface == MapDisplayMode.Main && !_session.Gliding)
                 {
-                    _modes.Main.AcceptDrag(_mapView);
+                    _session.Inventory.AcceptDrag(_mapView);
                 }
             };
 
@@ -92,9 +93,9 @@ namespace MapsExtended.Presentation
             _levelSelectSlider = LevelSelectSlider.Create(sliderPrefab, RectTransform);
             _levelSelectSlider.OnLevelSelectedBySlider += level =>
             {
-                if (_modes.Mode == MapDisplayMode.Main && !_modes.IsTransitioning)
+                if (_session.Surface == MapDisplayMode.Main && !_session.Gliding)
                 {
-                    _modes.Main.ChangeLevel(level);
+                    _session.Inventory.ChangeLevel(level);
                 }
             };
             _mapView.OnLevelSelected += level => _levelSelectSlider.SelectedLevel = level;
@@ -105,7 +106,7 @@ namespace MapsExtended.Presentation
                 .gameObject;
             _mapSelectDropdown = MapSelectDropdown.Create(selectPrefab, RectTransform);
             _catalog.Bind(_mapSelectDropdown, _mapView, ChangeMap);
-            _markers.Bind(_mapView);
+            _pins.Bind(_mapView);
 
             _cursorPositionText = CursorPositionText.Create(gameObject, _mapView.RectTransform, PositionTextFontSize);
             _cursorPositionText.RectTransform.anchorMin = TextAnchor;
@@ -137,7 +138,7 @@ namespace MapsExtended.Presentation
 
         private void Update()
         {
-            if (!_modes.IsShown)
+            if (!_session.Visible)
             {
                 return;
             }
@@ -148,32 +149,32 @@ namespace MapsExtended.Presentation
                 return;
             }
 
-            var layout = _modes.GetLayout(_modes.Mode);
-            if (layout.Size != _modes.TargetLayout.Size || layout.Position != _modes.TargetLayout.Position)
+            var layout = _session.FrameFor(_session.Surface);
+            if (layout.Size != _session.TargetFrame.Size || layout.Position != _session.TargetFrame.Position)
             {
-                RequestMode(_modes.Mode, false, true);
+                RequestMode(_session.Surface, false, true);
             }
 
             var player = GameUtils.GetMainPlayer();
-            UpdateActiveMap(player, !_modes.IsTransitioning);
-            if (_modes.IsTransitioning)
+            UpdateActiveMap(player, !_session.Gliding);
+            if (_session.Gliding)
             {
-                _modes.TransitionProgress = Mathf.Min(1f, _modes.TransitionProgress + Time.deltaTime / 0.35f);
-                var progress = Mathf.SmoothStep(0f, 1f, _modes.TransitionProgress);
-                ApplyLayout(new MapModeController.MapLayout
+                _session.GlideProgress = Mathf.Min(1f, _session.GlideProgress + Time.deltaTime / 0.35f);
+                var progress = Mathf.SmoothStep(0f, 1f, _session.GlideProgress);
+                ApplyLayout(new MapSession.Frame
                 {
-                    Position = Vector2.Lerp(_modes.TransitionFromLayout.Position, _modes.TargetLayout.Position, progress),
-                    Size = Vector2.Lerp(_modes.TransitionFromLayout.Size, _modes.TargetLayout.Size, progress)
+                    Position = Vector2.Lerp(_session.GlideFromFrame.Position, _session.TargetFrame.Position, progress),
+                    Size = Vector2.Lerp(_session.GlideFromFrame.Size, _session.TargetFrame.Size, progress)
                 });
                 ApplyDisplayedViewportState(MapViewportState.Lerp(
-                    _modes.TransitionFromState, _modes.DestinationViewportState(), progress));
+                    _session.GlideFromCamera, _session.CameraState(), progress));
             }
             else
             {
-                ApplyDisplayedViewportState(_modes.DestinationViewportState());
+                ApplyDisplayedViewportState(_session.CameraState());
             }
 
-            _scrollRect.enabled = _modes.Mode == MapDisplayMode.Main && !_modes.IsTransitioning;
+            _scrollRect.enabled = _session.Surface == MapDisplayMode.Main && !_session.Gliding;
             if (Settings.DumpInfoHotkey.Value.BetterIsDown())
             {
                 DumpUtils.DumpExtracts();
@@ -191,8 +192,8 @@ namespace MapsExtended.Presentation
 
             if (_peekComponent != null)
             {
-                _peekComponent.WasMiniMapActive = _modes.Mode == MapDisplayMode.Mini
-                    || (_modes.Mode == MapDisplayMode.Peek && _peekComponent.ShouldShowMiniMap);
+                _peekComponent.WasMiniMapActive = _session.Surface == MapDisplayMode.Mini
+                    || (_session.Surface == MapDisplayMode.Peek && _peekComponent.ShouldShowMiniMap);
             }
 
             IsShowingMapScreen = true;
@@ -209,7 +210,7 @@ namespace MapsExtended.Presentation
             }
 
             _mainParent.gameObject.SetActive(true);
-            if (!_modes.Main.HasViewportStateFor(_mapView.CurrentMapDef))
+            if (!_session.Inventory.HasViewportStateFor(_mapView.CurrentMapDef))
             {
                 // A broken TextMeshPro elsewhere on the canvas throws from here.
                 // That used to abort the replacement and let the vanilla map show.
@@ -243,9 +244,9 @@ namespace MapsExtended.Presentation
             HideDisplay();
             if (_mapView.CurrentMapDef != null)
             {
-                _markers.NotifyRaidEnd();
+                _pins.NotifyRaidEnd();
                 _mapView.UnloadMap();
-                _modes.Invalidate(null);
+                _session.Forget(null);
             }
 
             return false;
@@ -264,7 +265,7 @@ namespace MapsExtended.Presentation
 
         internal void RequestMode(MapDisplayMode mode, bool animate, bool resize = false)
         {
-            if (_modes.ChangingMode || (!resize && _modes.Mode == mode))
+            if (_session.Switching || (!resize && _session.Surface == mode))
             {
                 return;
             }
@@ -286,11 +287,11 @@ namespace MapsExtended.Presentation
                 return;
             }
 
-            _modes.ChangingMode = true;
+            _session.Switching = true;
             try
             {
-                var previousMode = _modes.Mode;
-                var wasVisible = _modes.IsShown;
+                var previousMode = _session.Surface;
+                var wasVisible = _session.Visible;
                 var fromState = _mapView.CaptureViewportState();
                 var oldScale = RectTransform.lossyScale.x;
 
@@ -301,10 +302,10 @@ namespace MapsExtended.Presentation
 
                 if (previousMode != mode)
                 {
-                    _modes.ClosePrevious(previousMode);
+                    _session.Release(previousMode);
                 }
 
-                if (!_modes.IsShown)
+                if (!_session.Visible)
                 {
                     _catalog.LoadAll();
                 }
@@ -345,87 +346,87 @@ namespace MapsExtended.Presentation
                 _scrollRect.StopMovement();
                 _scrollRect.enabled = false;
 
-                _modes.Mode = mode;
-                _modes.IsShown = true;
+                _session.Surface = mode;
+                _session.Visible = true;
                 gameObject.SetActive(true);
                 PositionControls();
-                _modes.TargetLayout = _modes.GetLayout(mode);
+                _session.TargetFrame = _session.FrameFor(mode);
 
                 var definition = _mapView.CurrentMapDef;
                 var player = GameUtils.GetMainPlayer();
                 if (mode == MapDisplayMode.Mini)
                 {
-                    _modes.Mini.Open(definition, _modes.TargetLayout.Size);
+                    _session.Corner.Open(definition, _session.TargetFrame.Size);
                 }
                 else
                 {
-                    if (resize && previousMode == mode && !_modes.MapChanged)
+                    if (resize && previousMode == mode && !_session.MapSwapped)
                     {
-                        _modes.Main.Resize(definition, _modes.TargetLayout.Size);
+                        _session.Inventory.Resize(definition, _session.TargetFrame.Size);
                     }
                     else
                     {
-                        _modes.Main.Open(definition, _modes.TargetLayout.Size, player, GameUtils.IsInRaid());
+                        _session.Inventory.Open(definition, _session.TargetFrame.Size, player, GameUtils.IsInRaid());
                     }
 
                     if (GameUtils.IsInRaid() && !(resize && previousMode == mode))
                     {
-                        _modes.Main.SelectPlayerLevel(_mapView, player);
+                        _session.Inventory.SelectPlayerLevel(_mapView, player);
                     }
                 }
 
                 UpdateActiveMap(player, false);
-                _markers.SetHostShown(true);
-                _markers.SetVisibility(true, GameUtils.IsInRaid());
+                _pins.SetHostShown(true);
+                _pins.SetVisibility(true, GameUtils.IsInRaid());
 
                 _cursorPositionText.gameObject.SetActive(mode == MapDisplayMode.Main);
                 _playerPositionText.gameObject.SetActive(mode == MapDisplayMode.Main && GameUtils.IsInRaid());
                 _levelSelectSlider.gameObject.SetActive(
-                    mode == MapDisplayMode.Main && MapModeController.HasMultipleLevels(definition));
+                    mode == MapDisplayMode.Main && MapSession.SpansFloors(definition));
                 _mapSelectDropdown.gameObject.SetActive(
                     mode == MapDisplayMode.Main && !GameUtils.IsInRaid() && _catalog.GetMapDefs().Count() > 1);
 
-                _modes.TransitionProgress = 1f;
-                if (wasVisible && !_modes.MapChanged && animate && _modes.TransitionAnimations)
+                _session.GlideProgress = 1f;
+                if (wasVisible && !_session.MapSwapped && animate && _session.Glide)
                 {
                     var lower = RectTransform.InverseTransformPoint(_maskCorners[0]);
                     var upper = RectTransform.InverseTransformPoint(_maskCorners[2]);
-                    _modes.TransitionFromLayout = new MapModeController.MapLayout
+                    _session.GlideFromFrame = new MapSession.Frame
                     {
                         Position = (lower + upper) * 0.5f,
                         Size = new Vector2(Mathf.Abs(upper.x - lower.x), Mathf.Abs(upper.y - lower.y))
                     };
                     fromState.Zoom *= oldScale / Mathf.Max(RectTransform.lossyScale.x, 0.0001f);
-                    _modes.TransitionFromState = fromState;
-                    _modes.TransitionProgress = 0f;
-                    ApplyLayout(_modes.TransitionFromLayout);
+                    _session.GlideFromCamera = fromState;
+                    _session.GlideProgress = 0f;
+                    ApplyLayout(_session.GlideFromFrame);
                     ApplyDisplayedViewportState(fromState);
                 }
                 else
                 {
-                    ApplyLayout(_modes.TargetLayout);
-                    ApplyDisplayedViewportState(_modes.DestinationViewportState());
+                    ApplyLayout(_session.TargetFrame);
+                    ApplyDisplayedViewportState(_session.CameraState());
                 }
 
-                _modes.MapChanged = false;
-                _scrollRect.enabled = mode == MapDisplayMode.Main && !_modes.IsTransitioning;
+                _session.MapSwapped = false;
+                _scrollRect.enabled = mode == MapDisplayMode.Main && !_session.Gliding;
             }
             finally
             {
-                _modes.ChangingMode = false;
+                _session.Switching = false;
             }
         }
 
         private void HideDisplay()
         {
             _catalog.TryClose();
-            _modes.CloseCurrent();
-            _markers.SetHostShown(false);
-            _markers.SetVisibility(false, false);
+            _session.ReleaseCurrent();
+            _pins.SetHostShown(false);
+            _pins.SetVisibility(false, false);
 
-            _modes.TransitionProgress = 1f;
-            _modes.Mode = MapDisplayMode.Hidden;
-            _modes.IsShown = false;
+            _session.GlideProgress = 1f;
+            _session.Surface = MapDisplayMode.Hidden;
+            _session.Visible = false;
             _scrollRect?.StopMovement();
             gameObject.SetActive(false);
 
@@ -437,25 +438,25 @@ namespace MapsExtended.Presentation
 
         private void UpdateActiveMap(Player player, bool allowInput)
         {
-            _modes.UpdateActiveMap(_mapView, player, allowInput, _catalog.IsDropdownOpen());
+            _session.Advance(_mapView, player, allowInput, _catalog.IsDropdownOpen());
         }
 
         private void ApplyDisplayedViewportState(MapViewportState state)
         {
-            _modes.ApplyingViewportState = true;
+            _session.WritingCamera = true;
             try
             {
                 _mapView.ApplyViewportState(state);
             }
             finally
             {
-                _modes.ApplyingViewportState = false;
+                _session.WritingCamera = false;
             }
         }
 
-        private void ApplyLayout(MapModeController.MapLayout layout)
+        private void ApplyLayout(MapSession.Frame layout)
         {
-            _modes.ApplyingViewportState = true;
+            _session.WritingCamera = true;
             try
             {
                 var mask = _scrollMask.GetRectTransform();
@@ -467,7 +468,7 @@ namespace MapsExtended.Presentation
             }
             finally
             {
-                _modes.ApplyingViewportState = false;
+                _session.WritingCamera = false;
             }
         }
 
@@ -487,7 +488,7 @@ namespace MapsExtended.Presentation
         private void OnRaidEnd()
         {
             HideDisplay();
-            _markers.NotifyRaidEnd();
+            _pins.NotifyRaidEnd();
             if (_peekComponent != null)
             {
                 Destroy(_peekComponent.gameObject);
@@ -495,12 +496,12 @@ namespace MapsExtended.Presentation
 
             _peekComponent = null;
             _mapView.UnloadMap();
-            _modes.Invalidate(null);
+            _session.Forget(null);
         }
 
         internal void ReadConfig()
         {
-            _modes.ReadConfig();
+            _session.ReadConfig();
             if (_peekComponent != null)
             {
                 _peekComponent.PeekShortcut = Settings.PeekShortcut.Value;
@@ -508,16 +509,16 @@ namespace MapsExtended.Presentation
                 _peekComponent.HideMinimapShortcut = Settings.MiniMapShowOrHide.Value;
             }
 
-            if (_modes.IsShown && !_modes.ChangingMode)
+            if (_session.Visible && !_session.Switching)
             {
-                var layout = _modes.GetLayout(_modes.Mode);
-                if (layout.Size != _modes.TargetLayout.Size || layout.Position != _modes.TargetLayout.Position)
+                var layout = _session.FrameFor(_session.Surface);
+                if (layout.Size != _session.TargetFrame.Size || layout.Position != _session.TargetFrame.Position)
                 {
-                    RequestMode(_modes.Mode, false, true);
+                    RequestMode(_session.Surface, false, true);
                 }
             }
 
-            _markers.ApplyConfig(ServerConfig);
+            _pins.ApplyConfig(ServerConfig);
         }
 
         internal void TryAddPeekComponent(EftBattleUIScreen battleUI)
@@ -555,19 +556,19 @@ namespace MapsExtended.Presentation
                 Plugin.Log.LogError($"Failed to load map {mapDef.DisplayName}: {e}");
                 _catalog.RemoveUnavailable(mapDef);
                 HideDisplay();
-                _markers.NotifyRaidEnd();
+                _pins.NotifyRaidEnd();
                 _mapView.UnloadMap();
-                _modes.Invalidate(null);
+                _session.Forget(null);
                 return;
             }
 
-            _modes.Invalidate(mapDef);
-            _modes.MapChanged = true;
+            _session.Forget(mapDef);
+            _session.MapSwapped = true;
             _catalog.NotifyLoaded(mapDef);
-            _markers.NotifyMapChanged(mapDef);
-            if (_modes.IsShown && !_modes.ChangingMode)
+            _pins.NotifyMapChanged(mapDef);
+            if (_session.Visible && !_session.Switching)
             {
-                RequestMode(_modes.Mode, false, true);
+                RequestMode(_session.Surface, false, true);
             }
         }
     }

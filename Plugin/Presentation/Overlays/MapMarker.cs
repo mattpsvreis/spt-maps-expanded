@@ -13,154 +13,96 @@ namespace MapsExtended.Presentation.Overlays
 {
     public class MapMarker : MonoBehaviour, ILayerBound, IPointerEnterHandler, IPointerExitHandler
     {
-        // TODO: this seems... not great?
-        private static Dictionary<string, Dictionary<LayerStatus, float>> CategoryImageAlphaLayerStatus { get; }
-            = new()
-            {
-                {"Extract", new Dictionary<LayerStatus, float> {
-                    {LayerStatus.Hidden, 0.50f},
-                    {LayerStatus.Underneath, 0.75f},
-                    {LayerStatus.OnTop, 1.0f},
-                    {LayerStatus.FullReveal, 1.0f},
-                }},
-                {"Secret", new Dictionary<LayerStatus, float> {
-                    {LayerStatus.Hidden, 0.50f},
-                    {LayerStatus.Underneath, 0.75f},
-                    {LayerStatus.OnTop, 1.0f},
-                    {LayerStatus.FullReveal, 1.0f},
-                }},
-                {"Transit", new Dictionary<LayerStatus, float> {
-                    {LayerStatus.Hidden, 0.50f},
-                    {LayerStatus.Underneath, 0.75f},
-                    {LayerStatus.OnTop, 1.0f},
-                    {LayerStatus.FullReveal, 1.0f},
-                }},
-                {"Quest", new Dictionary<LayerStatus, float> {
-                    {LayerStatus.Hidden, 0.50f},
-                    {LayerStatus.Underneath, 0.75f},
-                    {LayerStatus.OnTop, 1.0f},
-                    {LayerStatus.FullReveal, 1.0f},
-                }},
-                {"Airdrop", new Dictionary<LayerStatus, float> {
-                    {LayerStatus.Hidden, 0.50f},
-                    {LayerStatus.Underneath, 0.75f},
-                    {LayerStatus.OnTop, 1.0f},
-                    {LayerStatus.FullReveal, 1.0f},
-                }},
-            };
-        private static Dictionary<string, Dictionary<LayerStatus, float>> CategoryLabelAlphaLayerStatus { get; }
-            = new()
-            {
-                {"Extract", new Dictionary<LayerStatus, float> {
-                    {LayerStatus.Hidden, 0.0f},
-                    {LayerStatus.Underneath, 0.0f},
-                    {LayerStatus.OnTop, 1.0f},
-                    {LayerStatus.FullReveal, 1.0f},
-                }},
-                {"Secret", new Dictionary<LayerStatus, float> {
-                    {LayerStatus.Hidden, 0.0f},
-                    {LayerStatus.Underneath, 0.0f},
-                    {LayerStatus.OnTop, 1.0f},
-                    {LayerStatus.FullReveal, 1.0f},
-                }},
-                {"Transit", new Dictionary<LayerStatus, float> {
-                    {LayerStatus.Hidden, 0.0f},
-                    {LayerStatus.Underneath, 0.0f},
-                    {LayerStatus.OnTop, 1.0f},
-                    {LayerStatus.FullReveal, 1.0f},
-                }},
-                {"Quest", new Dictionary<LayerStatus, float> {
-                    {LayerStatus.Hidden, 0.0f},
-                    {LayerStatus.Underneath, 0.0f},
-                    {LayerStatus.OnTop, 1.0f},
-                    {LayerStatus.FullReveal, 1.0f},
-                }},
-            };
+        private static readonly Dictionary<string, Dictionary<LayerStatus, float>> CategoryImageAlpha = new()
+        {
+            ["Extract"] = SoftFloor(),
+            ["Secret"] = SoftFloor(),
+            ["Transit"] = SoftFloor(),
+            ["Quest"] = SoftFloor(),
+            ["Airdrop"] = SoftFloor()
+        };
 
-        private static readonly Vector2 LabelSizeMultiplier = new Vector2(2.5f, 2f);
-        private static readonly float MarkerMinFontSize = 9f;
-        private static readonly float MarkerMaxFontSize = 13f;
-        private const float HoverLabelWidth = 240f;
-        private const float HoverLabelFontSize = 12f;
+        private static readonly Dictionary<string, Dictionary<LayerStatus, float>> CategoryLabelAlpha = new()
+        {
+            ["Extract"] = TopOnly(),
+            ["Secret"] = TopOnly(),
+            ["Transit"] = TopOnly(),
+            ["Quest"] = TopOnly()
+        };
+
+        private static readonly Vector2 LabelSizeMultiplier = new(2.5f, 2f);
+        private const float MinFont = 9f;
+        private const float MaxFont = 13f;
+        private const float HoverWidth = 240f;
+        private const float HoverFont = 12f;
 
         public event Action<ILayerBound> OnPositionChanged;
 
         public string Text { get; private set; }
         public string Description { get; private set; } = "";
-
-        public void SetDescription(string description)
-        {
-            description ??= "";
-            if (Description == description)
-            {
-                return;
-            }
-
-            // Hide while the old text is still set, so the label returns to the name.
-            if (_isInFullReveal && !string.IsNullOrEmpty(Description))
-            {
-                HideDescription();
-            }
-
-            Description = description;
-
-            if (_isInFullReveal && !string.IsNullOrEmpty(Description))
-            {
-                ShowDescription();
-            }
-        }
         public string Category { get; private set; }
-        public MapView ContainingMapView { get; set; }
-
-        internal Image Image { get; set; }
-        internal TextMeshProUGUI Label { get; set; }
-        private RectTransform RectTransform
-        {
-            get => gameObject.transform as RectTransform;
-        }
-
+        public MapCanvas ContainingMapView { get; set; }
         public string AssociatedItemId { get; private set; } = "";
         public bool IsDynamic { get; protected set; }
         public string ImagePath => _imagePath;
-        private bool ShowInRaid { get; set; } = true;
 
+        internal Image Image { get; set; }
+        internal TextMeshProUGUI Label { get; set; }
+
+        private RectTransform RectTransform => gameObject.transform as RectTransform;
+        private bool _showInRaid = true;
         private Vector3 _position;
+        private float _rotation;
+        private Color _color = Color.white;
+        private Vector2 _size = new(30f, 30f);
+        private string _imagePath;
+        private float _baseRotation;
+        private bool _outlined;
+        private bool _hovered;
+
+        protected Dictionary<LayerStatus, float> ImageAlphaLayerStatus { get; set; } = new()
+        {
+            [LayerStatus.Hidden] = 0f,
+            [LayerStatus.Underneath] = 0f,
+            [LayerStatus.OnTop] = 1f,
+            [LayerStatus.FullReveal] = 1f
+        };
+
+        protected Dictionary<LayerStatus, float> LabelAlphaLayerStatus { get; set; } = new()
+        {
+            [LayerStatus.Hidden] = 0f,
+            [LayerStatus.Underneath] = 0f,
+            [LayerStatus.OnTop] = 0f,
+            [LayerStatus.FullReveal] = 1f
+        };
+
         public Vector3 Position
         {
             get => _position;
             set => Move(value);
         }
 
-        private float _rotation;
         public float Rotation
         {
             get => _rotation;
             set => SetRotation(value);
         }
 
-        private Color _color = Color.white;
         public Color Color
         {
             get => _color;
-
             set
             {
                 _color = value;
-                // Floor fade owns alpha. Status and faction updates only change the tint.
-                ApplyRgb(Image, value);
-                ApplyRgb(Label, value);
+                Tint(Image, value);
+                Tint(Label, value);
                 GetComponent<FactionMarkerTint>()?.NativeColourChanged(value);
             }
         }
 
-        private Vector2 _size = new Vector2(30f, 30f);
         public Vector2 Size
         {
-            get
-            {
-                return _size;
-            }
-
+            get => _size;
             set
             {
                 _size = value;
@@ -170,86 +112,85 @@ namespace MapsExtended.Presentation.Overlays
             }
         }
 
-        protected Dictionary<LayerStatus, float> ImageAlphaLayerStatus { get; set; } = new()
+        public void SetDescription(string description)
         {
-            {LayerStatus.Hidden, 0.0f},
-            {LayerStatus.Underneath, 0.0f},
-            {LayerStatus.OnTop, 1f},
-            {LayerStatus.FullReveal, 1f},
-        };
-        
-        protected Dictionary<LayerStatus, float> LabelAlphaLayerStatus { get; set; } = new()
-        {
-            {LayerStatus.Hidden, 0.0f},
-            {LayerStatus.Underneath, 0.0f},
-            {LayerStatus.OnTop, 0.0f},
-            {LayerStatus.FullReveal, 1f},
-        };
+            description ??= "";
+            if (Description == description)
+            {
+                return;
+            }
 
-        private string _imagePath;
-        private float _initialRotation;
-        private bool _hasSetOutline;
-        private bool _isInFullReveal;
+            if (_hovered && !string.IsNullOrEmpty(Description))
+            {
+                HideDescription();
+            }
+
+            Description = description;
+            if (_hovered && !string.IsNullOrEmpty(Description))
+            {
+                ShowDescription();
+            }
+        }
 
         public static MapMarker Create(GameObject parent, MapMarkerDef def, Vector2 size, float degreesRotation, float scale)
         {
-            var mapMarker = Create<MapMarker>(parent, def.Text, def.Category, def.ImagePath, def.Color, def.Position, size,
-                                              def.Pivot, degreesRotation, scale, def.ShowInRaid, def.Sprite);
-            mapMarker.AssociatedItemId = def.AssociatedItemId;
-            mapMarker.Description = def.Description ?? "";
-
-            return mapMarker;
+            var marker = Create<MapMarker>(parent, def.Text, def.Category, def.ImagePath, def.Color, def.Position, size,
+                def.Pivot, degreesRotation, scale, def.ShowInRaid, def.Sprite);
+            marker.AssociatedItemId = def.AssociatedItemId;
+            marker.Description = def.Description ?? "";
+            return marker;
         }
 
-        public static T Create<T>(GameObject parent, string text, string category, string imageRelativePath, Color color,
-                                  Vector3 position, Vector2 size, Vector2 pivot, float degreesRotation, float scale,
-                                  bool showInRaid = true, Sprite sprite = null)
-                            where T : MapMarker
+        public static T Create<T>(
+            GameObject parent,
+            string text,
+            string category,
+            string imageRelativePath,
+            Color color,
+            Vector3 position,
+            Vector2 size,
+            Vector2 pivot,
+            float degreesRotation,
+            float scale,
+            bool showInRaid = true,
+            Sprite sprite = null) where T : MapMarker
         {
             var go = UIUtils.CreateUIGameObject(parent, $"MapMarker {text}");
+            var hit = go.AddComponent<Image>();
+            hit.color = Color.clear;
+            hit.raycastTarget = true;
 
-            // this is to receive mouse events
-            var fakeImage = go.AddComponent<Image>();
-            fakeImage.color = Color.clear;
-            fakeImage.raycastTarget = true;
-
-            var rectTransform = go.GetRectTransform();
-            rectTransform.anchoredPosition = position;
-            rectTransform.sizeDelta = size;
-            rectTransform.localScale = scale * Vector2.one;
-            rectTransform.localRotation = Quaternion.Euler(0, 0, degreesRotation);
-            rectTransform.pivot = pivot;
+            var rect = go.GetRectTransform();
+            rect.anchoredPosition = position;
+            rect.sizeDelta = size;
+            rect.localScale = scale * Vector2.one;
+            rect.localRotation = Quaternion.Euler(0, 0, degreesRotation);
+            rect.pivot = pivot;
 
             var marker = go.AddComponent<T>();
             marker.Text = text;
             marker.Category = category;
             marker.Position = position;
-            marker._initialRotation = degreesRotation;
-            marker.ShowInRaid = showInRaid;
+            marker._baseRotation = degreesRotation;
+            marker._showInRaid = showInRaid;
 
-            // image
             var imageGo = UIUtils.CreateUIGameObject(go, "image");
             imageGo.AddComponent<CanvasRenderer>();
             imageGo.GetRectTransform().sizeDelta = size;
             imageGo.GetRectTransform().pivot = new Vector2(0.5f, 0.5f);
             marker.Image = imageGo.AddComponent<Image>();
             marker.Image.raycastTarget = false;
-            if (sprite is null)
+            marker.Image.type = Image.Type.Simple;
+            if (sprite == null)
             {
                 marker.SetImagePath(imageRelativePath);
-                Settings.MarkerPack.SettingChanged += marker.OnMarkerPackChanged;
+                Settings.MarkerPack.SettingChanged += marker.OnPackChanged;
             }
             else
             {
                 marker.Image.sprite = sprite;
             }
-            marker.Image.type = Image.Type.Simple;
 
-            // var outline = imageGO.AddComponent<Outline>();
-            // outline.effectColor = Color.black;
-            // outline.effectDistance = Vector2.one;
-
-            // label
             var labelGo = UIUtils.CreateUIGameObject(go, "label");
             labelGo.AddComponent<CanvasRenderer>();
             labelGo.GetRectTransform().anchorMin = new Vector2(0.5f, 0f);
@@ -260,31 +201,26 @@ namespace MapsExtended.Presentation.Overlays
             marker.Label.alignment = TextAlignmentOptions.Top;
             marker.Label.enableWordWrapping = true;
             marker.Label.enableAutoSizing = true;
-            marker.Label.fontSizeMin = MarkerMinFontSize;
-            marker.Label.fontSizeMax = MarkerMaxFontSize;
+            marker.Label.fontSizeMin = MinFont;
+            marker.Label.fontSizeMax = MaxFont;
             marker.Label.text = marker.Text;
             marker.Label.raycastTarget = false;
-
-            marker._hasSetOutline = UIUtils.TrySetTMPOutline(marker.Label);
-
+            marker._outlined = UIUtils.TrySetTMPOutline(marker.Label);
             marker.Color = color;
             marker._size = size;
-
             marker.Label.gameObject.SetActive(false);
-
             return marker;
         }
 
-        protected virtual void OnEnable()
-        {
-            TrySetOutlineAndResize();
-        }
+        protected virtual void OnEnable() => EnsureOutline();
 
         protected virtual void OnDestroy()
         {
             if (Settings.MarkerPack != null)
-                Settings.MarkerPack.SettingChanged -= OnMarkerPackChanged;
-            
+            {
+                Settings.MarkerPack.SettingChanged -= OnPackChanged;
+            }
+
             OnPositionChanged = null;
         }
 
@@ -294,17 +230,10 @@ namespace MapsExtended.Presentation.Overlays
             _imagePath = path;
         }
 
-        private void OnMarkerPackChanged(object sender, EventArgs e)
-        {
-            if (Image != null && _imagePath != null)
-                SetImagePath(_imagePath);
-        }
-
         public void Move(Vector3 newPosition, bool callback = true)
         {
-            RectTransform.anchoredPosition = newPosition; // vector3 to vector2 discards z
+            RectTransform.anchoredPosition = newPosition;
             _position = newPosition;
-
             if (callback)
             {
                 OnPositionChanged?.Invoke(this);
@@ -314,7 +243,7 @@ namespace MapsExtended.Presentation.Overlays
         public void SetRotation(float degreesRotation)
         {
             _rotation = degreesRotation;
-            Image.gameObject.GetRectTransform().localRotation = Quaternion.Euler(0, 0, degreesRotation - _initialRotation);
+            Image.gameObject.GetRectTransform().localRotation = Quaternion.Euler(0, 0, degreesRotation - _baseRotation);
         }
 
         public void MoveAndRotate(Vector3 newPosition, float rotation, bool callback = true)
@@ -323,45 +252,33 @@ namespace MapsExtended.Presentation.Overlays
             SetRotation(rotation);
         }
 
-        private static void ApplyRgb(Graphic graphic, Color colour)
-        {
-            if (graphic == null)
-            {
-                return;
-            }
-
-            colour.a = graphic.color.a;
-            graphic.color = colour;
-        }
-
         public void HandleNewLayerStatus(LayerStatus status)
         {
-            if (!ShowInRaid && GameUtils.IsInRaid())
+            if (!_showInRaid && GameUtils.IsInRaid())
             {
                 gameObject.SetActive(false);
                 return;
             }
 
-            if (_isInFullReveal)
+            if (_hovered)
             {
                 status = LayerStatus.FullReveal;
             }
 
             var imageAlpha = ImageAlphaLayerStatus[status];
             var labelAlpha = LabelAlphaLayerStatus[status];
-
-            if (CategoryImageAlphaLayerStatus.ContainsKey(Category))
+            if (CategoryImageAlpha.TryGetValue(Category, out var images))
             {
-                imageAlpha = CategoryImageAlphaLayerStatus[Category][status];
+                imageAlpha = images[status];
             }
-            if (CategoryLabelAlphaLayerStatus.ContainsKey(Category))
+
+            if (CategoryLabelAlpha.TryGetValue(Category, out var labels))
             {
-                labelAlpha = CategoryLabelAlphaLayerStatus[Category][status];
+                labelAlpha = labels[status];
             }
 
             Image.color = new Color(Image.color.r, Image.color.g, Image.color.b, imageAlpha);
             Label.color = new Color(Label.color.r, Label.color.g, Label.color.b, labelAlpha);
-
             Image.gameObject.SetActive(imageAlpha > 0f);
             Label.gameObject.SetActive(labelAlpha > 0f);
             gameObject.SetActive(labelAlpha > 0f || imageAlpha > 0f);
@@ -369,9 +286,8 @@ namespace MapsExtended.Presentation.Overlays
 
         public void OnPointerEnter(PointerEventData eventData)
         {
-            TrySetOutlineAndResize();
-
-            _isInFullReveal = true;
+            EnsureOutline();
+            _hovered = true;
             transform.SetAsLastSibling();
             ShowDescription();
             HandleNewLayerStatus(LayerStatus.FullReveal);
@@ -379,9 +295,17 @@ namespace MapsExtended.Presentation.Overlays
 
         public void OnPointerExit(PointerEventData eventData)
         {
-            _isInFullReveal = false;
+            _hovered = false;
             HideDescription();
             OnPositionChanged?.Invoke(this);
+        }
+
+        private void OnPackChanged(object sender, EventArgs e)
+        {
+            if (Image != null && _imagePath != null)
+            {
+                SetImagePath(_imagePath);
+            }
         }
 
         private void ShowDescription()
@@ -393,10 +317,10 @@ namespace MapsExtended.Presentation.Overlays
 
             var text = string.IsNullOrEmpty(Text) ? Description : Text + "\n" + Description;
             Label.enableAutoSizing = false;
-            Label.fontSize = HoverLabelFontSize;
+            Label.fontSize = HoverFont;
             Label.text = text;
-            var height = Label.GetPreferredValues(text, HoverLabelWidth, 0f).y;
-            Label.rectTransform.sizeDelta = new Vector2(HoverLabelWidth, Mathf.Max(height, HoverLabelFontSize));
+            var height = Label.GetPreferredValues(text, HoverWidth, 0f).y;
+            Label.rectTransform.sizeDelta = new Vector2(HoverWidth, Mathf.Max(height, HoverFont));
         }
 
         private void HideDescription()
@@ -407,28 +331,53 @@ namespace MapsExtended.Presentation.Overlays
             }
 
             Label.enableAutoSizing = true;
-            Label.fontSizeMin = MarkerMinFontSize;
-            Label.fontSizeMax = MarkerMaxFontSize;
+            Label.fontSizeMin = MinFont;
+            Label.fontSizeMax = MaxFont;
             Label.text = Text;
             Label.rectTransform.sizeDelta = _size * LabelSizeMultiplier;
         }
 
-        private void TrySetOutlineAndResize()
+        private void EnsureOutline()
         {
-            if (_hasSetOutline || Label == null)
+            if (_outlined || Label == null)
             {
                 return;
             }
 
-            // try resetting text, since it seems like if outline fails, it doesn't size properly
             Label.enableAutoSizing = true;
             Label.enableWordWrapping = true;
-            Label.fontSizeMin = MarkerMinFontSize;
-            Label.fontSizeMax = MarkerMaxFontSize;
+            Label.fontSizeMin = MinFont;
+            Label.fontSizeMax = MaxFont;
             Label.alignment = TextAlignmentOptions.Top;
             Label.text = $"{Label.text}";
-
-            _hasSetOutline = UIUtils.TrySetTMPOutline(Label);
+            _outlined = UIUtils.TrySetTMPOutline(Label);
         }
+
+        private static void Tint(Graphic graphic, Color colour)
+        {
+            if (graphic == null)
+            {
+                return;
+            }
+
+            colour.a = graphic.color.a;
+            graphic.color = colour;
+        }
+
+        private static Dictionary<LayerStatus, float> SoftFloor() => new()
+        {
+            [LayerStatus.Hidden] = 0.5f,
+            [LayerStatus.Underneath] = 0.75f,
+            [LayerStatus.OnTop] = 1f,
+            [LayerStatus.FullReveal] = 1f
+        };
+
+        private static Dictionary<LayerStatus, float> TopOnly() => new()
+        {
+            [LayerStatus.Hidden] = 0f,
+            [LayerStatus.Underneath] = 0f,
+            [LayerStatus.OnTop] = 1f,
+            [LayerStatus.FullReveal] = 1f
+        };
     }
 }

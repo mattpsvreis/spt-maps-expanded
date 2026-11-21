@@ -9,7 +9,6 @@ using MapsExtended.Integration;
 using MapsExtended.Presentation;
 using UnityEngine;
 
-// THIS IS HEAVILY BASED ON DRAKIAXYZ'S SPT-QuickMoveToContainer
 namespace MapsExtended.Config
 {
     internal static class Settings
@@ -699,7 +698,7 @@ namespace MapsExtended.Config
             ConfigEntries.Add(FriendlyPlayerColor = config.Bind(
                 MarkerColors,
                 "Teammate arrows",
-                new Color(0.5f, 0.5f, 1f),
+                (Color)new Color32(0xAD, 0xFF, 0x00, 0xFF),
                 new ConfigDescription(
                     "Colour of players grouped with you.",
                     null,
@@ -708,7 +707,7 @@ namespace MapsExtended.Config
             ConfigEntries.Add(PmcBearColor = config.Bind(
                 MarkerColors,
                 "Bear arrows",
-                new Color(1, 0, 0),
+                (Color)new Color32(0xC2, 0x00, 0x00, 0xFF),
                 new ConfigDescription(
                     "Colour of Bear PMCs.",
                     null,
@@ -717,7 +716,7 @@ namespace MapsExtended.Config
             ConfigEntries.Add(PmcUsecColor = config.Bind(
                 MarkerColors,
                 "USEC arrows",
-                new Color(1, 1, 0),
+                (Color)new Color32(0xAA, 0xE4, 0xFF, 0xFF),
                 new ConfigDescription(
                     "Colour of USEC PMCs.",
                     null,
@@ -735,7 +734,7 @@ namespace MapsExtended.Config
             ConfigEntries.Add(BossColor = config.Bind(
                 MarkerColors,
                 "Boss arrows",
-                new Color(1f, 0.45f, 0.007f),
+                (Color)new Color32(0xFF, 0x00, 0xFF, 0xFF),
                 new ConfigDescription(
                     "Colour of living bosses.",
                     null,
@@ -753,7 +752,7 @@ namespace MapsExtended.Config
             ConfigEntries.Add(AirdropColor = config.Bind(
                 MarkerColors,
                 "Airdrop crates",
-                new Color(1f, 0.30f, 0.007f),
+                (Color)new Color32(0x8E, 0x77, 0x02, 0xFF),
                 new ConfigDescription(
                     "Colour of landed airdrop crates.",
                     null,
@@ -762,7 +761,7 @@ namespace MapsExtended.Config
             ConfigEntries.Add(BackpackColor = config.Bind(
                 MarkerColors,
                 "Bags you dropped",
-                new Color(0f, 1f, 0.0f),
+                (Color)new Color32(0x00, 0xAC, 0x00, 0xFF),
                 new ConfigDescription(
                     "Colour of backpacks you threw on the ground.",
                     null,
@@ -771,7 +770,7 @@ namespace MapsExtended.Config
             ConfigEntries.Add(KilledCorpseColor = config.Bind(
                 MarkerColors,
                 "Bodies you killed",
-                new Color(1f, 0.0f, 0.0f),
+                (Color)new Color32(0x45, 0x00, 0x00, 0xFF),
                 new ConfigDescription(
                     "Colour of people you killed, other than bosses.",
                     null,
@@ -798,7 +797,7 @@ namespace MapsExtended.Config
             ConfigEntries.Add(FriendlyCorpseColor = config.Bind(
                 MarkerColors,
                 "Teammate bodies",
-                new Color(0.5f, 0.5f, 1f),
+                (Color)new Color32(0x0F, 0x26, 0x00, 0xFF),
                 new ConfigDescription(
                     "Colour of dead players who were grouped with you.",
                     null,
@@ -807,7 +806,7 @@ namespace MapsExtended.Config
             ConfigEntries.Add(FriendlyKilledCorpseColor = config.Bind(
                 MarkerColors,
                 "Bodies your team killed",
-                new Color(0.75f, 0.25f, 0.5f),
+                (Color)new Color32(0x33, 0x0E, 0x1E, 0xFF),
                 new ConfigDescription(
                     "Colour of people a teammate killed, other than bosses.",
                     null,
@@ -816,7 +815,7 @@ namespace MapsExtended.Config
             ConfigEntries.Add(BtrColor = config.Bind(
                 MarkerColors,
                 "The BTR",
-                new Color(0.21f, 0.39f, 0.16f),
+                (Color)new Color32(0x98, 0x00, 0x00, 0xFF),
                 new ConfigDescription(
                     "Colour of the BTR.",
                     null,

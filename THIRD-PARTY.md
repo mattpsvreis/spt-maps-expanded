@@ -1,8 +1,8 @@
 # Third-party licensing — Maps Expanded
 
 **Maps Expanded** ships its own plugin/server binaries under MIT (`LICENSE`, `NOTICE`)
-and redistributes map definitions / artwork under the same third-party terms already
-documented by the upstream projects whose assets were incorporated.
+and redistributes map definitions / artwork under the third-party terms already
+documented by the projects whose assets were incorporated.
 
 Maps Expanded does **not** relicense third-party artwork as MIT.
 
@@ -11,16 +11,18 @@ Artwork and data packs → remain under the licences below.
 
 ---
 
-## Upstream MIT software (incorporated)
+## Historical software lineage (no longer incorporated)
 
-See `NOTICE` for full copyright lines. Short provenance:
+Earlier Maps Expanded releases adapted MIT software from:
 
-| Upstream | Role in Maps Expanded |
+| Upstream | Historical role |
 |---|---|
-| [SPT-DynamicMaps](https://github.com/acidphantasm/SPT-DynamicMaps) | Core map UI idea / markers idea / server item restrictions idea |
+| [SPT-DynamicMaps](https://github.com/acidphantasm/SPT-DynamicMaps) | In-raid / out-of-raid map UI and marker ideas |
 | [DynamicMaps Extended](https://github.com/black-hawk95/DynamicMaps-Extended) | Faction colours, Map Variants support, packaged custom map data |
 
-Those projects’ own docs state that **third-party artwork is not MIT**. Maps Expanded keeps that separation.
+As of 2.0.0 that adapted software has been replaced. Packaged map definitions and
+artwork from Extended and related sources still ship under the artwork licences
+below.
 
 ---
 
@@ -39,22 +41,13 @@ https://creativecommons.org/licenses/by-nc-sa/4.0/
 
 ## Tarkov.dev / related raster (Satellite) artwork
 
-Satellite raster previews packaged in Maps Expanded’s `Addons/Extended` packs retain
-original source attribution and applicable upstream terms. Bundling here does not
-create new redistribution rights beyond what upstream projects already asserted.
+See credit files shipped with each map pack under `Plugin/Resources` and
+`Plugin/Addons`. Those packs keep their original attribution filenames where
+required.
 
 ---
 
-## Icebreaker
+## Icebreaker and other CC BY-NC-SA packs
 
-- Original poster: RE3MR (https://reemr.se/icebreaker/)
-- SVG tracing / QuestCodex work: Viper-9 / QuestCodex
-- Licence: **CC BY-NC-SA 4.0**
-- Packaged with `ATTRIBUTION.txt` and `re3mr-LICENSE.md` beside the Icebreaker maps
-
----
-
-## Classic Maps ports by LennoxP90 map layers
-
-Sourced via upstream Extended packaging from older DynamicMaps MIT-licensed map data.
-Retains original attribution; not independently relicensed by Maps Expanded.
+Icebreaker and related packs remain **CC BY-NC-SA 4.0**. See the LICENSE /
+credit files next to those packs.

@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using SPT.Reflection.Patching;
-using MapsExtended.Core;
+using MapsExtended.App;
 using MapsExtended.Integration;
-using MapsExtended.Presentation;
+using SPT.Reflection.Patching;
 using EFT;
 using EFT.Interactive;
 using EFT.InventoryLogic;
@@ -14,7 +13,11 @@ namespace MapsExtended.Hooks
 {
     internal class PlayerOnDeadPatch : ModulePatch
     {
-        internal static event Action<Player> OnDead;
+        internal static event Action<Player> OnDead
+        {
+            add => RaidEvents.PlayerDied += value;
+            remove => RaidEvents.PlayerDied -= value;
+        }
 
         protected override MethodBase GetTargetMethod()
         {
@@ -24,7 +27,7 @@ namespace MapsExtended.Hooks
         [PatchPostfix]
         public static void PatchPostfix(Player __instance)
         {
-            OnDead?.Invoke(__instance);
+            RaidEvents.RaisePlayerDied(__instance);
         }
     }
 
@@ -32,50 +35,41 @@ namespace MapsExtended.Hooks
     {
         internal static event Action<int, Item> OnThrowItem;
         internal static Dictionary<int, Item> ThrownItems = [];
-
-        private bool _hasRegisteredEvents;
+        private bool _hooked;
 
         protected override MethodBase GetTargetMethod()
         {
-            if (!_hasRegisteredEvents)
+            if (!_hooked)
             {
-                GameWorldOnDestroyPatch.OnRaidEnd += OnRaidEnd;
-                GameWorldDestroyLootPatch.OnDestroyLoot += OnDestroyLoot;
-                _hasRegisteredEvents = true;
+                RaidEvents.RaidEnded += () => ThrownItems.Clear();
+                RaidEvents.LootDestroyed += OnDestroyLoot;
+                _hooked = true;
             }
 
             return AccessTools.Method(typeof(Player.PlayerInventoryController),
-                                      nameof(Player.PlayerInventoryController.ThrowItem));
+                nameof(Player.PlayerInventoryController.ThrowItem));
         }
 
         [PatchPostfix]
         public static void PatchPostfix(Player.PlayerInventoryController __instance, Item item)
         {
-            // only look at main player's dropped items
             var player = __instance.Player;
             if (player == null || player != GameUtils.GetMainPlayer())
             {
                 return;
             }
 
-            var itemNetId = item.Id.GetHashCode();
-            ThrownItems[itemNetId] = item;
-            OnThrowItem?.Invoke(itemNetId, item);
+            var netId = item.Id.GetHashCode();
+            ThrownItems[netId] = item;
+            OnThrowItem?.Invoke(netId, item);
         }
 
-        internal static void OnDestroyLoot(LootItem lootItem)
+        private static void OnDestroyLoot(LootItem lootItem)
         {
-            if (lootItem == null || lootItem.Item == null)
+            if (lootItem?.Item != null)
             {
-                return;
+                ThrownItems.Remove(lootItem.GetNetId());
             }
-
-            ThrownItems.Remove(lootItem.GetNetId());
-        }
-
-        internal static void OnRaidEnd()
-        {
-            ThrownItems.Clear();
         }
     }
 }

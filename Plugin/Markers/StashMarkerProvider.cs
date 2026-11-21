@@ -1,93 +1,68 @@
-using System.Collections.Generic;
 using System.Linq;
 using MapsExtended.Config;
 using MapsExtended.Core;
 using MapsExtended.Hooks;
-using MapsExtended.Presentation.Overlays;
 using MapsExtended.Integration;
-using MapsExtended.Presentation;
+using MapsExtended.Presentation.Overlays;
 using EFT.Interactive;
 
-namespace MapsExtended.Markers;
-
-public class HiddenStashMarkerProvider : MarkerProviderBase
+namespace MapsExtended.Markers
 {
-    private MapView _lastMapView;
-    private readonly Dictionary<LootableContainer, MapMarker> _stashMarkers = [];
-    private const string HiddenCacheImagePath = "Markers/barrel.png";
-    
-    public override void OnShowInRaid(MapView map)
+    public class HiddenStashMarkerProvider : PinSource
     {
-        _lastMapView = map;
+        private const string Icon = "Markers/barrel.png";
+        private readonly PinBag<LootableContainer> _pins = new();
 
-        foreach (var stash in GameStartedPatch.HiddenStashes)
+        protected override void ShowInRaid(MapCanvas map)
         {
-            TryAddMarker(stash);
+            foreach (var stash in GameStartedPatch.HiddenStashes)
+            {
+                Place(stash);
+            }
         }
-    }
-public override void OnRaidEnd(MapView map)
-    {
-        TryRemoveMarkers();
-    }
 
-    public override void OnMapChanged(MapView map, MapDef mapDef)
-    {
-        _lastMapView = map;
+        protected override void EndRaid(MapCanvas map) => _pins.Clear();
 
-        foreach (var stash in _stashMarkers.Keys.ToList())
+        protected override void MapChanged(MapCanvas map, MapDef mapDef)
         {
-            TryRemoveMarker(stash);
-            TryAddMarker(stash);
+            foreach (var stash in _pins.Keys.ToList())
+            {
+                _pins.Drop(stash);
+                Place(stash);
+            }
         }
-    }
 
-    public override void OnDisable(MapView map)
-    {
-        OnRaidEnd(map);
-    }
+        protected override void Disable(MapCanvas map) => EndRaid(map);
 
-    public void RefreshMarkers()
-    {
-        if (!GameUtils.IsInRaid()) return;
-
-        foreach (var stash in _stashMarkers.Keys.ToList())
+        public void RefreshMarkers()
         {
-            TryRemoveMarker(stash);
-            TryAddMarker(stash);
+            if (!GameUtils.IsInRaid())
+            {
+                return;
+            }
+
+            foreach (var stash in _pins.Keys.ToList())
+            {
+                _pins.Drop(stash);
+                Place(stash);
+            }
         }
-    }
 
-    private void TryAddMarker(LootableContainer stash)
-    {
-        if (_stashMarkers.ContainsKey(stash)) 
-            return;
-        
-        var markerDef = new MapMarkerDef
+        private void Place(LootableContainer stash)
         {
-            Category = "Hidden Stash",
-            Color = Settings.HiddenStashColor.Value,
-            ImagePath = HiddenCacheImagePath,
-            Position = MathUtils.ConvertToMapPosition(stash.transform),
-            Text = "Hidden Stash"
-        };
+            if (Map == null || stash == null || _pins.Has(stash))
+            {
+                return;
+            }
 
-        var marker = _lastMapView.AddMapMarker(markerDef);
-        _stashMarkers[stash] = marker;
-    }
-
-    private void TryRemoveMarkers()
-    {
-        foreach (var stash in _stashMarkers.Keys.ToList())
-        {
-            TryRemoveMarker(stash);
+            _pins.Put(stash, Map.AddMapMarker(new MapMarkerDef
+            {
+                Category = "Hidden Stash",
+                Color = Settings.HiddenStashColor.Value,
+                ImagePath = Icon,
+                Position = MathUtils.ConvertToMapPosition(stash.transform),
+                Text = "Hidden Stash"
+            }));
         }
-    }
-
-    private void TryRemoveMarker(LootableContainer stash)
-    {
-        if (!_stashMarkers.ContainsKey(stash)) return;
-        
-        _stashMarkers[stash].ContainingMapView.RemoveMapMarker(_stashMarkers[stash]);
-        _stashMarkers.Remove(stash);
     }
 }

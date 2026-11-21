@@ -2,32 +2,33 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Comfort.Common;
+using EFT.UI;
 using MapsExtended.Core;
 using MapsExtended.Presentation.Controls;
 using MapsExtended.Presentation.Overlays;
-using EFT.UI;
 
 namespace MapsExtended.Presentation
 {
     /// <summary>
-    /// Loads map definitions from Maps/ + Addons, applies location filters / preferences.
+    /// Hands the dropdown the maps discovered under Maps/ and Addons, then
+    /// narrows that list to the raid location or the player's saved pack.
     /// </summary>
     internal sealed class MapCatalog
     {
         internal const string MapRelPath = "Maps";
 
         private MapSelectDropdown _dropdown;
-        private MapView _mapView;
-        private Action<MapDef> _onMapChosen;
+        private MapCanvas _canvas;
+        private Action<MapDef> _chosen;
 
         internal MapSelectDropdown Dropdown => _dropdown;
 
-        internal void Bind(MapSelectDropdown dropdown, MapView mapView, Action<MapDef> onMapChosen)
+        internal void Bind(MapSelectDropdown dropdown, MapCanvas mapView, Action<MapDef> onMapChosen)
         {
             _dropdown = dropdown;
-            _mapView = mapView;
-            _onMapChosen = onMapChosen;
-            _dropdown.OnMapSelected += def => _onMapChosen?.Invoke(def);
+            _canvas = mapView;
+            _chosen = onMapChosen;
+            _dropdown.OnMapSelected += def => _chosen?.Invoke(def);
         }
 
         internal void LoadAll() => _dropdown.LoadMapDefsFromPath(MapRelPath);
@@ -41,7 +42,7 @@ namespace MapsExtended.Presentation
         internal void ApplyOutOfRaid()
         {
             _dropdown.ClearFilter();
-            if (_mapView.CurrentMapDef == null)
+            if (_canvas.CurrentMapDef == null)
             {
                 _dropdown.LoadFirstAvailableMap();
             }
@@ -61,33 +62,33 @@ namespace MapsExtended.Presentation
 
         internal void PrecacheBundledLayers()
         {
-            Singleton<CommonUI>.Instance.StartCoroutine(PrecacheCoroutine(GetMapDefs()));
+            Singleton<CommonUI>.Instance.StartCoroutine(WarmSprites(GetMapDefs()));
         }
 
-        private static IEnumerator PrecacheCoroutine(IEnumerable<MapDef> mapDefs)
+        private static IEnumerator WarmSprites(IEnumerable<MapDef> maps)
         {
-            foreach (var mapDef in mapDefs)
+            foreach (var map in maps)
             {
-                if (mapDef.IsAddon)
+                if (map.IsAddon)
                 {
                     continue;
                 }
 
-                foreach (var layerDef in mapDef.Layers.Values)
+                foreach (var layer in map.Layers.Values)
                 {
-                    Plugin.Log?.LogInfo($"Precaching sprite: {layerDef.ImagePath}");
-                    if (!System.IO.Path.GetExtension(layerDef.ImagePath).Equals(".svg", StringComparison.OrdinalIgnoreCase))
+                    Plugin.Log?.LogInfo($"Precaching sprite: {layer.ImagePath}");
+                    if (!layer.ImagePath.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
                     {
                         continue;
                     }
 
                     try
                     {
-                        SvgUtils.GetOrLoadCachedSprite(layerDef);
+                        SvgUtils.GetOrLoadCachedSprite(layer);
                     }
-                    catch (Exception e)
+                    catch (Exception ex)
                     {
-                        Plugin.Log?.LogError($"Failed to precache {layerDef.ImagePath}: {e}");
+                        Plugin.Log?.LogError($"Failed to precache {layer.ImagePath}: {ex}");
                     }
 
                     yield return null;

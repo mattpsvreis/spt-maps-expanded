@@ -11,11 +11,11 @@ namespace MapsExtended.Markers
         private static float _spawnTime = 0.25f;
         private float _timeAccumulator = 0f;
 
-        public MapView MapView { get; set; }
+        public MapCanvas MapCanvas { get; set; }
 
         private void Update()
         {
-            if (MapView == null)
+            if (MapCanvas == null)
             {
                 return;
             }
@@ -37,7 +37,7 @@ namespace MapsExtended.Markers
                 Position = MathUtils.ConvertToMapPosition(((IPlayer)GameUtils.GetMainPlayer()).Position)
             };
 
-            MapView.AddMapMarker(markerDef);
+            MapCanvas.AddMapMarker(markerDef);
             _timeAccumulator = 0f;
         }
     }

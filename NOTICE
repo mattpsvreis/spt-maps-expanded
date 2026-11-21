@@ -4,25 +4,19 @@ Maps Expanded
 This project is **Maps Expanded** — a standalone SPT mod (client + optional
 server mod). It is not DynamicMaps, or DynamicMaps Extended.
 
-Maps Expanded includes MIT-licensed software adapted from those upstream projects.
-Attribution for that incorporated code is retained below as required by MIT.
+As of 2.0.0 the plugin and server software implementation is Maps Expanded's
+own work (session, canvas, cameras, pin sources, pin board, raid events, map
+library, build check, quest utilities, faction colours, aliases, and server
+policy / paper-map registration).
 
-Upstream projects (MIT software incorporated into Maps Expanded)
-----------------------------------------------------------------
+Earlier releases adapted MIT-licensed software from DynamicMaps /
+SPT-DynamicMaps and DynamicMaps Extended. That adapted software has been
+replaced. Those projects remain historically related and are thanked for the
+ideas and for the map packs redistributed under the third-party terms below.
 
-1. DynamicMaps / SPT-DynamicMaps
-   - Source: https://github.com/acidphantasm/SPT-DynamicMaps (originally mpstark)
-   - Licence: MIT — Copyright (c) Michael P. Starkweather and contributors
-   - Used for: core in-raid / out-of-raid map UI, markers, patches, server map items
-
-2. DynamicMaps Extended
-   - Source: https://github.com/black-hawk95/DynamicMaps-Extended
-   - Licence: MIT — Copyright (c) DynamicMaps Extended contributors
-   - Used for: faction marker colouring, MoreBotsAPI role discovery, MapVariants /
-     FactoryClassic alias selection concepts, and packaged map definitions / artwork
-     redistributed under the third-party terms Extended already documented
-
-Third-party artwork is NOT MIT — see THIRD-PARTY.md (Tarkov.dev SVG CC BY-NC-SA 4.0,
-Icebreaker CC BY-NC-SA 4.0, etc.).
+Map artwork and data packs are NOT MIT — see THIRD-PARTY.md (Tarkov.dev SVG
+CC BY-NC-SA 4.0, Icebreaker CC BY-NC-SA 4.0, Extended packaged maps, etc.).
+Filenames and credit files that mention upstream authors stay where the map
+licences require them.
 
 This NOTICE must be retained with redistributions of Maps Expanded.

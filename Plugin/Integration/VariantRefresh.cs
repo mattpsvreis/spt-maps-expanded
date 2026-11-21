@@ -2,20 +2,20 @@ using System;
 using System.Reflection;
 using HarmonyLib;
 using MapsExtended.Presentation;
-using MapsExtended.Integration;
+using UnityEngine;
 
 namespace MapsExtended.Integration
 {
     /// <summary>
-    /// When MapVariants decides or changes the raid variant, re-run the location
-    /// filter so MapAlias can pick the matching Extended pack (late decisions / transits).
+    /// MapVariants can lock a raid variant after the map screen is already open.
+    /// This listens for that decision and asks the open screen to filter packs again.
     /// </summary>
     internal static class VariantRefresh
     {
-        private static Action<string> _handler;
-        private static EventInfo _resolvedEvent;
-        private static bool _subscribed;
+        private static Action<string> _onResolved;
+        private static EventInfo _variantResolved;
         private static PropertyInfo _currentLocationId;
+        private static bool _hooked;
 
         internal static void Initialize()
         {
@@ -26,87 +26,93 @@ namespace MapsExtended.Integration
 
             try
             {
-                var mapsType = AccessTools.TypeByName("MapVariants.Client.Api.Maps")
-                               ?? throw new MissingMemberException("MapVariants.Client.Api.Maps not found");
+                var maps = AccessTools.TypeByName("MapVariants.Client.Api.Maps");
+                if (maps == null)
+                {
+                    throw new MissingMemberException("MapVariants.Client.Api.Maps not found");
+                }
 
-                _resolvedEvent = mapsType.GetEvent("VariantResolved", BindingFlags.Public | BindingFlags.Static)
-                                 ?? throw new MissingMemberException("Maps.VariantResolved not found");
+                _variantResolved = maps.GetEvent("VariantResolved", BindingFlags.Public | BindingFlags.Static);
+                if (_variantResolved == null)
+                {
+                    throw new MissingMemberException("Maps.VariantResolved not found");
+                }
 
-                _currentLocationId = AccessTools.Property(mapsType, "CurrentLocationId");
-                _handler = OnVariantResolved;
-                _resolvedEvent.AddEventHandler(null, _handler);
-                _subscribed = true;
+                _currentLocationId = AccessTools.Property(maps, "CurrentLocationId");
+                _onResolved = HandleResolved;
+                _variantResolved.AddEventHandler(null, _onResolved);
+                _hooked = true;
                 Plugin.Log?.LogInfo("[MapsExpanded] Subscribed to MapVariants VariantResolved for live map-pack refresh.");
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Plugin.Log?.LogWarning($"[MapsExpanded] Could not subscribe to MapVariants VariantResolved: {e.Message}");
+                Plugin.Log?.LogWarning("[MapsExpanded] Could not subscribe to MapVariants VariantResolved: " + ex.Message);
             }
         }
 
         internal static void Shutdown()
         {
-            if (!_subscribed || _resolvedEvent == null || _handler == null)
+            if (!_hooked || _variantResolved == null || _onResolved == null)
             {
                 return;
             }
 
             try
             {
-                _resolvedEvent.RemoveEventHandler(null, _handler);
+                _variantResolved.RemoveEventHandler(null, _onResolved);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Plugin.Log?.LogWarning($"[MapsExpanded] VariantResolved unsubscribe failed: {e.Message}");
+                Plugin.Log?.LogWarning("[MapsExpanded] VariantResolved unsubscribe failed: " + ex.Message);
             }
 
-            _subscribed = false;
-            _handler = null;
+            _hooked = false;
+            _onResolved = null;
         }
 
-        private static void OnVariantResolved(string variant)
+        private static void HandleResolved(string variant)
         {
             try
             {
-                var locationId = ResolveLocationId();
+                var locationId = ReadLocation();
                 if (string.IsNullOrWhiteSpace(locationId))
                 {
                     return;
                 }
 
-                if (!RefreshScreen(Plugin.Instance?.Map, locationId))
+                if (!Apply(Plugin.Instance?.Map, locationId))
                 {
-                    var screens = UnityEngine.Resources.FindObjectsOfTypeAll<RaidMapHost>();
-                    if (screens == null)
+                    var open = Resources.FindObjectsOfTypeAll<RaidMapHost>();
+                    if (open == null)
                     {
                         return;
                     }
 
-                    foreach (var screen in screens)
+                    for (var i = 0; i < open.Length; i++)
                     {
-                        RefreshScreen(screen, locationId);
+                        Apply(open[i], locationId);
                     }
                 }
 
-                Plugin.DebugLog($"VariantResolved variant={variant}, location={locationId}");
+                Plugin.DebugLog("VariantResolved variant=" + variant + ", location=" + locationId);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Plugin.Log?.LogWarning($"[MapsExpanded] VariantResolved refresh failed: {e.Message}");
+                Plugin.Log?.LogWarning("[MapsExpanded] VariantResolved refresh failed: " + ex.Message);
             }
         }
 
-        private static string ResolveLocationId()
+        private static string ReadLocation()
         {
-            if (_currentLocationId?.GetValue(null) is string fromMv && !string.IsNullOrWhiteSpace(fromMv))
+            if (_currentLocationId?.GetValue(null) is string fromApi && !string.IsNullOrWhiteSpace(fromApi))
             {
-                return fromMv;
+                return fromApi;
             }
 
             return GameUtils.GetCurrentMapInternalName();
         }
 
-        private static bool RefreshScreen(RaidMapHost screen, string locationId)
+        private static bool Apply(RaidMapHost screen, string locationId)
         {
             if (screen == null)
             {

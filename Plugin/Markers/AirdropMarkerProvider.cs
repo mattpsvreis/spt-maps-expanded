@@ -1,124 +1,82 @@
-using System.Collections.Generic;
 using System.Linq;
 using MapsExtended.Config;
 using MapsExtended.Core;
 using MapsExtended.Hooks;
-using MapsExtended.Presentation.Overlays;
 using MapsExtended.Integration;
-using MapsExtended.Presentation;
+using MapsExtended.Presentation.Overlays;
 using EFT.SynchronizableObjects;
 using UnityEngine;
 
 namespace MapsExtended.Markers
 {
-    public class AirdropMarkerProvider : MarkerProviderBase
+    public class AirdropMarkerProvider : PinSource
     {
-        private MapView _lastMapView;
-        private readonly Dictionary<AirdropSynchronizableObject, MapMarker> _airdropMarkers = [];
+        private const string Icon = "Markers/airdrop.png";
+        private static readonly Vector2 Pivot = new(0.5f, 0.25f);
+        private readonly PinBag<AirdropSynchronizableObject> _pins = new();
 
-        // TODO: move to config
-        private const string AirdropName = "Airdrop";
-        private const string AirdropCategory = "Airdrop";
-        private const string AirdropImagePath = "Markers/airdrop.png";
-        private static readonly Vector2 AirdropPivot = new Vector2(0.5f, 0.25f);
-        //
-
-        public override void OnShowInRaid(MapView map)
+        protected override void ShowInRaid(MapCanvas map)
         {
-            _lastMapView = map;
-            
-            // add all existing airdrops
-            foreach (var airdrop in AirdropBoxOnBoxLandPatch.Airdrops)
+            foreach (var drop in AirdropBoxOnBoxLandPatch.Airdrops)
             {
-                TryAddMarker(airdrop);
+                Place(drop);
             }
 
-            // subscribe to new airdrops while map is open
-            AirdropBoxOnBoxLandPatch.OnAirdropLanded += TryAddMarker;
+            AirdropBoxOnBoxLandPatch.OnAirdropLanded += Place;
         }
 
-        public override void OnHideInRaid(MapView map)
+        protected override void HideInRaid(MapCanvas map)
         {
-            // unsubscribe to new airdrops, since we're hiding
-            AirdropBoxOnBoxLandPatch.OnAirdropLanded -= TryAddMarker;
+            AirdropBoxOnBoxLandPatch.OnAirdropLanded -= Place;
         }
 
-        public override void OnRaidEnd(MapView map)
+        protected override void EndRaid(MapCanvas map)
         {
-            AirdropBoxOnBoxLandPatch.OnAirdropLanded -= TryAddMarker;
-            TryRemoveMarkers();
+            AirdropBoxOnBoxLandPatch.OnAirdropLanded -= Place;
+            _pins.Clear();
         }
 
-        public override void OnMapChanged(MapView map, MapDef mapDef)
+        protected override void MapChanged(MapCanvas map, MapDef mapDef)
         {
-            _lastMapView = map;
-
-            // transition markers from last map to this one
-            foreach (var airdrop in _airdropMarkers.Keys.ToList())
+            foreach (var drop in _pins.Keys.ToList())
             {
-                TryRemoveMarker(airdrop);
-                TryAddMarker(airdrop);
+                _pins.Drop(drop);
+                Place(drop);
             }
         }
 
-        public override void OnDisable(MapView map)
-        {
-            OnRaidEnd(map);
-        }
+        protected override void Disable(MapCanvas map) => EndRaid(map);
 
         public void RefreshMarkers()
         {
-            if (!GameUtils.IsInRaid()) return;
-
-            foreach (var drop in _airdropMarkers.ToArray())
+            if (!GameUtils.IsInRaid())
             {
-                TryRemoveMarker(drop.Key);
+                return;
             }
 
+            _pins.Clear();
             foreach (var drop in AirdropBoxOnBoxLandPatch.Airdrops)
             {
-                TryAddMarker(drop);
+                Place(drop);
             }
         }
-        
-        private void TryAddMarker(AirdropSynchronizableObject airdrop)
+
+        private void Place(AirdropSynchronizableObject drop)
         {
-            if (_airdropMarkers.ContainsKey(airdrop))
+            if (Map == null || drop == null || _pins.Has(drop))
             {
                 return;
             }
 
-            var markerDef = new MapMarkerDef
+            _pins.Put(drop, Map.AddMapMarker(new MapMarkerDef
             {
-                Category = AirdropCategory,
+                Category = "Airdrop",
                 Color = Settings.AirdropColor.Value,
-                ImagePath = AirdropImagePath,
-                Position = MathUtils.ConvertToMapPosition(airdrop.transform),
-                Pivot = AirdropPivot,
-                Text = AirdropName
-            };
-
-            var marker = _lastMapView.AddMapMarker(markerDef);
-            _airdropMarkers[airdrop] = marker;
+                ImagePath = Icon,
+                Position = MathUtils.ConvertToMapPosition(drop.transform),
+                Pivot = Pivot,
+                Text = "Airdrop"
+            }));
         }
-
-        private void TryRemoveMarkers()
-        {
-            foreach (var airdrop in _airdropMarkers.Keys.ToList())
-            {
-                TryRemoveMarker(airdrop);
-            }
-        }
-
-        private void TryRemoveMarker(AirdropSynchronizableObject airdrop)
-        {
-            if (!_airdropMarkers.ContainsKey(airdrop))
-            {
-                return;
-            }
-
-            _airdropMarkers[airdrop].ContainingMapView.RemoveMapMarker(_airdropMarkers[airdrop]);
-            _airdropMarkers.Remove(airdrop);
-        }
-}
+    }
 }

@@ -1,7 +1,5 @@
 using System.Collections.Generic;
 using MapsExtended.Core;
-using MapsExtended.Integration;
-using MapsExtended.Presentation;
 using TMPro;
 using UnityEngine;
 
@@ -9,20 +7,19 @@ namespace MapsExtended.Presentation.Overlays
 {
     public class MapLabel : MonoBehaviour, ILayerBound
     {
+        private TextMeshProUGUI _label;
+        private Vector3 _position;
+        private Color _color = Color.white;
+        private bool _outlineApplied;
+
         private string Text { get; set; }
         public string Category { get; protected set; }
 
-        private TextMeshProUGUI Label { get; set; }
-        public RectTransform RectTransform
-        {
-            get => gameObject.transform as RectTransform;
-        }
+        public RectTransform RectTransform => transform as RectTransform;
 
-        private Vector3 _position;
         public Vector3 Position
         {
             get => _position;
-
             set
             {
                 gameObject.GetRectTransform().anchoredPosition = value;
@@ -30,70 +27,63 @@ namespace MapsExtended.Presentation.Overlays
             }
         }
 
-        private Color _color = Color.white;
         public Color Color
         {
-            get
-            {
-                return _color;
-            }
+            get => _color;
             set
             {
                 _color = value;
-                Label.color = value;
+                _label.color = value;
             }
         }
 
-        public Dictionary<LayerStatus, float> LabelAlphaLayerStatus { get; set; } = new Dictionary<LayerStatus, float>
-            {
-                {LayerStatus.Hidden, 0.0f},
-                {LayerStatus.Underneath, 0.0f},
-                {LayerStatus.OnTop, 1f},
-                {LayerStatus.FullReveal, 1f},
-            };
-
-        private bool _hasSetOutline;
+        public Dictionary<LayerStatus, float> LabelAlphaLayerStatus { get; set; } = new()
+        {
+            { LayerStatus.Hidden, 0f },
+            { LayerStatus.Underneath, 0f },
+            { LayerStatus.OnTop, 1f },
+            { LayerStatus.FullReveal, 1f },
+        };
 
         public static MapLabel Create(GameObject parent, MapLabelDef def, float degreesRotation, float scale)
         {
             var go = UIUtils.CreateUIGameObject(parent, $"MapLabel {def.Text}");
-
-            var rectTransform = go.GetRectTransform();
-            rectTransform.anchoredPosition = def.Position;
-            rectTransform.localScale = scale * Vector2.one;
-            rectTransform.localRotation = Quaternion.Euler(0, 0, degreesRotation - def.DegreesRotation);
+            var rect = go.GetRectTransform();
+            rect.anchoredPosition = def.Position;
+            rect.localScale = scale * Vector2.one;
+            rect.localRotation = Quaternion.Euler(0f, 0f, degreesRotation - def.DegreesRotation);
 
             var label = go.AddComponent<MapLabel>();
             label.Text = def.Text;
             label.Category = def.Category;
             label.Position = def.Position;
 
-            label.Label = go.AddComponent<TextMeshProUGUI>();
+            label._label = go.AddComponent<TextMeshProUGUI>();
             label.Color = def.Color;
-            label.Label.autoSizeTextContainer = true;
-            label.Label.fontSize = def.FontSize;
-            label.Label.alignment = TextAlignmentOptions.Center;
-            label.Label.text = label.Text;
-
-            label._hasSetOutline = UIUtils.TrySetTMPOutline(label.Label);
-
+            label._label.autoSizeTextContainer = true;
+            label._label.fontSize = def.FontSize;
+            label._label.alignment = TextAlignmentOptions.Center;
+            label._label.text = label.Text;
+            label._outlineApplied = UIUtils.TrySetTMPOutline(label._label);
             return label;
         }
 
         private void OnEnable()
         {
-            if (_hasSetOutline || Label == null)
+            if (_outlineApplied || _label == null)
             {
                 return;
             }
 
-            _hasSetOutline = UIUtils.TrySetTMPOutline(Label);
-            Label.text = Label.text;  // try resetting text, since it seems like if outline fails, it doesn't size properly
+            _outlineApplied = UIUtils.TrySetTMPOutline(_label);
+            _label.text = _label.text;
         }
 
         public void HandleNewLayerStatus(LayerStatus status)
         {
-            Label.color = new Color(Label.color.r, Label.color.g, Label.color.b, LabelAlphaLayerStatus[status]);
+            var color = _label.color;
+            color.a = LabelAlphaLayerStatus[status];
+            _label.color = color;
         }
     }
 }

@@ -2,6 +2,25 @@
 
 All notable changes to Maps Expanded are recorded here. Newer versions are at the top. This file starts with 1.0.0, the first version in this repository.
 
+## 2.0.0 — 2026-11-21
+
+### Changed
+
+- The plugin now checks the Tarkov build itself and refuses to load on a mismatch.
+- Map packs are loaded through one library used by the map selector.
+- Inventory, peek, and corner-map display state now lives in one session. The old mode controller is gone.
+- The map is drawn by a canvas that owns the floors and pins. The old map view is gone.
+- Inventory and corner cameras are new types. Pan, zoom, floor changes, and the saved zoom settings behave as before.
+- Markers attach through one pin source. Show, hide, raid end, map change, and recolour go through that source.
+- Player, BTR, airdrop, backpack, stash, transit, and helicopter pins now share one pin bag.
+- Quest, extract, secret, corpse, other-player, and locked-door pins use the same pin source path.
+- Soft mods, map-pack aliases, peek, the pin board, and the server policy router are rewritten. Paper-map trader items and config.json keys are unchanged.
+- Raid patches raise events through one raid-events hub.
+- Quest marker utilities, map layers, and pin visuals are rewritten. Falling Skies leftover-visit suppression is unchanged.
+- Game helpers, math, SVG/texture/UI helpers, defs, faction colours, catalog, and UI patches are rewritten.
+- Therapist paper-map items are gone. The inventory map requirement was already removed, so those items had no remaining use.
+- Updated default colours for teammate / Bear / USEC / boss arrows, airdrops, dropped bags, corpse markers, the BTR, Black Division, Remnant, ISB, and Detected chaosInsurgency / civilian.
+
 ## 1.1.0 — 2026-11-20
 
 ### Added
