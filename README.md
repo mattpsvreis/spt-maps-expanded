@@ -1,6 +1,6 @@
 # Maps Expanded
 
-**Maps Expanded** is a full replacement for Tarkov’s map screen on **SPT 4.1.x**. It gives you a real interactive map in hideout and in raid - multi-floor layers, peeks, a minimap, and live markers for extracts, quests, keys, bots, loot, and more - plus bundled map packs and automatic switching when you (optionally) use `Map Variants` by LennoxP90, `Classic Maps` by LennoxP90, or `Manimal's backports`.
+**Maps Expanded** is a full replacement for Tarkov’s map screen on **SPT 4.1.x**. It gives you a real interactive map in hideout and in raid - multi-floor layers, peeks, a minimap, and live markers for extracts, quests, keys, bots, and more - plus bundled map packs and automatic switching when you (optionally) use `Map Variants` by LennoxP90, `Classic Maps` by LennoxP90, or `Manimal's backports`.
 
 ## Features
 
@@ -14,18 +14,18 @@
 
 ### Markers (in raid)
 - **You** — player arrow
-- **Colours** — every marker type has its own colour under Marker Colors in F12, and changes apply while the map is open
+- **Colours** — every marker type has its own colour under Colours in F12, and changes apply while the map is open
 - **Others** — friendlies, PMCs, scavs, bosses, non-vanilla / modded bots (server config can restrict certain categories)
 - **Quests** — objective markers in raid; out of raid after you’ve visited that map once (zone cache). Hover a marker to read the objective
 - **Extracts** — extracts, transit points, secret extracts; optional open / closed / requirements colouring. Hover an extract that is not open yet to see what it still needs, such as a code-word note, a switch, or a payment
 - **Locked doors** — lock / key / keycard / car / safe icons coloured by whether the key is on you, in stash, or missing
-- **World** — BTR, airdrops, your dropped backpacks, wishlist items (loose or in containers), hidden stashes
+- **World** — BTR, airdrops, your dropped backpacks, hidden stashes
 - **Corpses** — friendly, player-killed, boss, and other (each toggleable)
 - Optional marker icon packs via `Addons/*/Markers` (other modders are welcome to add their own stuff as addons!)
 
 ### Progression / immersion
 - Optional “require paper map in inventory” to open the map in raid
-- Intel Center level gates for PMCs, bosses, scavs, friendlies, corpses, airdrops, wishlist loot, and hidden stashes
+- Intel Center level gates for PMCs, bosses, scavs, friendlies, corpses, airdrops, and hidden stashes
 
 ### Faction colours
 - Tint bot / player markers by faction when Custom Faction Colours is enabled
@@ -61,7 +61,7 @@
 
 ## F12 config
 
-Everything above is toggled in Configuration Manager under Maps Expanded: General, Markers, Progression, In-Raid, Mini-map, Marker Colors, External Mod Support, Map Selection, and Custom Faction Colours.
+Everything above is toggled in Configuration Manager under Maps Expanded: Controls, What to show, Intel and paper map, Opening the map in raid, Corner map, Colours, Extra mods, Map style, and Faction colours.
 
 ## Licensing
 

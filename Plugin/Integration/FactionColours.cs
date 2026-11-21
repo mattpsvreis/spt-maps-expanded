@@ -49,7 +49,7 @@ namespace MapsExtended.Integration
                 "Enable faction colours",
                 true,
                 new ConfigDescription(
-                    "Colour recognised addon factions (Black Division, UNTAR, RUAF, ISB, etc.). Core map settings still own tracking and visibility.",
+                    "Colour recognised addon factions, such as Black Division, UNTAR, RUAF, and ISB. Hiding a marker category in What to show still hides them.",
                     null,
                     new ConfigurationManagerAttributes { Order = 100 }));
 
@@ -158,7 +158,7 @@ namespace MapsExtended.Integration
                 name,
                 colour,
                 new ConfigDescription(
-                    "Colour for this faction's soldiers, bosses and followers. RGB is used; floor opacity stays with the map view.",
+                    "Colour for this faction's soldiers, bosses, and followers. Markers on other floors still fade.",
                     null,
                     new ConfigurationManagerAttributes { Order = order }));
             Colours[name] = entry;
@@ -270,11 +270,11 @@ namespace MapsExtended.Integration
                     }
 
                     var entry = _config.Bind(
-                        "9a. Faction Grouping",
+                        "9a. Dynamic faction grouping",
                         "Group with - " + ConfigName(bot.role),
                         AutomaticGroup,
                         new ConfigDescription(
-                            $"Automatic uses {Roles[bot.id]}. Pick another colour group to share it, or Maps Expanded default to leave unchanged.",
+                            $"Automatic uses {Roles[bot.id]}. Pick another faction to share its colour, or Maps Expanded default to keep the normal marker colour.",
                             new AcceptableValueList<string>(choices)));
                     GroupOverrides[bot.id] = entry;
                     entry.SettingChanged += SettingsChanged;

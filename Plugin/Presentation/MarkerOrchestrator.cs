@@ -33,7 +33,6 @@ namespace MapsExtended.Presentation
             AddRemove<BackpackMarkerProvider>(Settings.ShowDroppedBackpackInRaid.Value);
             AddRemove<BtrMarkerProvider>(Settings.ShowBTRInRaid.Value);
             AddRemove<AirdropMarkerProvider>(Settings.ShowAirdropsInRaid.Value);
-            AddRemove<LootMarkerProvider>(Settings.ShowWishListItemsInRaid.Value);
             AddRemove<HiddenStashMarkerProvider>(Settings.ShowHiddenStashesInRaid.Value);
             AddRemove<TransitMarkerProvider>(Settings.ShowTransitPointsInRaid.Value);
             AddRemove<SecretMarkerProvider>(Settings.ShowSecretPointsInRaid.Value);
@@ -41,11 +40,6 @@ namespace MapsExtended.Presentation
             if (Settings.ShowAirdropsInRaid.Value)
             {
                 Get<AirdropMarkerProvider>()?.RefreshMarkers();
-            }
-
-            if (Settings.ShowWishListItemsInRaid.Value)
-            {
-                Get<LootMarkerProvider>()?.RefreshMarkers();
             }
 
             if (Settings.ShowHiddenStashesInRaid.Value)

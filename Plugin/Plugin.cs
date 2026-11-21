@@ -74,10 +74,10 @@ namespace MapsExtended
             }
 
             DebugLogging = Config.Bind(
-                "0. Debug",
-                "EnableDebugLogging",
+                "0. Troubleshooting",
+                "Write extra log notes",
                 false,
-                "Detailed Maps Expanded diagnostics for faction colours and map aliases.");
+                "Add Maps Expanded notes to the BepInEx log, covering faction colours and which map pack was chosen.");
 
             Settings.Init(Config);
             FactionColours.Initialize(Config);

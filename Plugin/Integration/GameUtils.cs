@@ -231,13 +231,6 @@ namespace MapsExtended.Integration
                 .SingleOrDefault(a => a.AreaType == EAreaType.IntelligenceCenter)?.Level ?? 0;
         }
 
-        public static MongoID[] GetWishListItems()
-        {
-            var wishList = PlayerProfile.WishlistManager.GetWishlist();
-            
-            return wishList.Keys.ToArray();
-        }
-        
         public static bool ShouldShowMapInRaid()
         {
             if (!Settings.RequireMapInInventory.Value || !IsInRaid()) return true;

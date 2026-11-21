@@ -56,8 +56,6 @@ namespace MapsExtended.Config
         public static ConfigEntry<bool> ShowTransitPointsInRaid;
         public static ConfigEntry<bool> ShowSecretPointsInRaid;
         public static ConfigEntry<bool> ShowDroppedBackpackInRaid;
-        public static ConfigEntry<bool> ShowWishListItemsInRaid;
-        public static ConfigEntry<bool> ShowWishListItemsInContainers;
         public static ConfigEntry<bool> ShowBTRInRaid;
         public static ConfigEntry<bool> ShowAirdropsInRaid;
         public static ConfigEntry<bool> ShowHiddenStashesInRaid;
@@ -79,7 +77,6 @@ namespace MapsExtended.Config
         public static ConfigEntry<int> ShowFriendlyIntelLevel;
         public static ConfigEntry<int> ShowCorpseIntelLevel;
         public static ConfigEntry<int> ShowAirdropIntelLevel;
-        public static ConfigEntry<int> ShowWishListItemsIntelLevel;
         public static ConfigEntry<int> ShowHiddenStashIntelLevel;
         
         #endregion
@@ -100,7 +97,7 @@ namespace MapsExtended.Config
 
         #region Mini Map
 
-        private const string MiniMapTitle = "5. Mini-map";
+        private const string MiniMapTitle = "5. Minimap";
         public static ConfigEntry<bool> MiniMapEnabled;
         public static ConfigEntry<EMiniMapPosition> MiniMapPosition;
         public static ConfigEntry<float> MiniMapSizeX;
@@ -117,7 +114,7 @@ namespace MapsExtended.Config
 
         #region Colors
 
-        private const string MarkerColors = "6. Marker Colors";
+        private const string MarkerColors = "6. Colours";
         public static ConfigEntry<Color> PlayerColor;
         public static ConfigEntry<Color> FriendlyPlayerColor;
         public static ConfigEntry<Color> PmcBearColor;
@@ -127,8 +124,6 @@ namespace MapsExtended.Config
         public static ConfigEntry<Color> NonVanillaBotColor;
         public static ConfigEntry<Color> AirdropColor;
         public static ConfigEntry<Color> BackpackColor;
-        public static ConfigEntry<Color> LootItemColor;
-        public static ConfigEntry<Color> ContainerLootItemColor;
         public static ConfigEntry<Color> KilledCorpseColor;
         public static ConfigEntry<Color> KilledBossColor;
         public static ConfigEntry<Color> KilledOtherColor;
@@ -153,11 +148,11 @@ namespace MapsExtended.Config
         
         #region External Mod Support
         
-        private const string ExternModSupport = "7. External Mod Support";
+        private const string ExternModSupport = "7. Extra mods";
         public static ConfigEntry<bool> ShowHeliCrashMarker;
         
         
-        private const string MapSelectionTitle = "8. Map Selection";
+        private const string MapSelectionTitle = "8. Map styles";
         
         #endregion
         
@@ -170,128 +165,127 @@ namespace MapsExtended.Config
 
             ConfigEntries.Add(ReplaceMapScreen = config.Bind(
                 GeneralTitle,
-                "Replace Map Screen",
+                "Use this map in your inventory",
                 true,
                 new ConfigDescription(
-                    "If the map should replace the BSG default map screen, requires swapping away from modded map to refresh",
+                    "Swap Tarkov's character inventory map for Maps Expanded. After changing this, leave the map tab and open it again.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(CenterOnPlayerHotkey = config.Bind(
                 GeneralTitle,
-                "Center on Player Hotkey",
+                "Center on you",
                 new KeyboardShortcut(KeyCode.Semicolon),
                 new ConfigDescription(
-                    "Pressed while the map is open, centers the player",
+                    "While a map is open, jump the view back to your position.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(MoveMapUpHotkey = config.Bind(
                 GeneralTitle,
-                "Move Map Up Hotkey",
+                "Pan map up",
                 new KeyboardShortcut(KeyCode.UpArrow),
                 new ConfigDescription(
-                    "Hotkey to move the map up",
+                    "Slide the map upward while it is open.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(MoveMapDownHotkey = config.Bind(
                 GeneralTitle,
-                "Move Map Down Hotkey",
+                "Pan map down",
                 new KeyboardShortcut(KeyCode.DownArrow),
                 new ConfigDescription(
-                    "Hotkey to move the map down",
+                    "Slide the map downward while it is open.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(MoveMapLeftHotkey = config.Bind(
                 GeneralTitle,
-                "Move Map Left Hotkey",
+                "Pan map left",
                 new KeyboardShortcut(KeyCode.LeftArrow),
                 new ConfigDescription(
-                    "Hotkey to move the map left",
+                    "Slide the map to the left while it is open.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(MoveMapRightHotkey = config.Bind(
                 GeneralTitle,
-                "Move Map Right Hotkey",
+                "Pan map right",
                 new KeyboardShortcut(KeyCode.RightArrow),
                 new ConfigDescription(
-                    "Hotkey to move the map right",
+                    "Slide the map to the right while it is open.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(MapMoveHotkeySpeed = config.Bind(
                 GeneralTitle,
-                "Move Map Hotkey Speed",
+                "Pan speed",
                 0.25f,
                 new ConfigDescription(
-                    "How fast the map should move, units are map percent per second",
+                    "How quickly the pan keys move the map. 0.05 is a crawl, 2 crosses the map quickly.",
                     new AcceptableValueRange<float>(0.05f, 2f),
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(ChangeMapLevelUpHotkey = config.Bind(
                 GeneralTitle,
-                "Change Map Level Up Hotkey",
+                "Floor up",
                 new KeyboardShortcut(KeyCode.Period),
                 new ConfigDescription(
-                    "Hotkey to move the map level up (shift-scroll-up also does this in map screen)",
+                    "Show the next floor up. Shift and scroll up does the same on the map screen.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(ChangeMapLevelDownHotkey = config.Bind(
                 GeneralTitle,
-                "Change Map Level Down Hotkey",
+                "Floor down",
                 new KeyboardShortcut(KeyCode.Comma),
                 new ConfigDescription(
-                    "Hotkey to move the map level down (shift-scroll-down also does this in map screen)",
+                    "Show the next floor down. Shift and scroll down does the same on the map screen.",
                     null,
                     new ConfigurationManagerAttributes())));
 
-            
             ConfigEntries.Add(ZoomMainMapToMouse = config.Bind(
                 GeneralTitle,
-                "Zoom Menu Map to Mouse",
+                "Zoom toward the cursor",
                 true,
                 new ConfigDescription(
-                    "If the zoom hotkeys should zoom to mouse position or center when on Map Screen in inventory / out of raid",
+                    "On the inventory map, zoom keys and the scroll wheel zoom toward the cursor. Off, they zoom toward the middle of the map.",
                     null,
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(ZoomMapInHotkey = config.Bind(
                 GeneralTitle,
-                "Zoom Map In Hotkey",
+                "Zoom in",
                 new KeyboardShortcut(KeyCode.Equals),
                 new ConfigDescription(
-                    "Hotkey to zoom the map in (scroll-up also does this in map screen)",
+                    "Zoom closer. Scrolling up does the same on the map screen.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(ZoomMapOutHotkey = config.Bind(
                 GeneralTitle,
-                "Zoom Map Out Hotkey",
+                "Zoom out",
                 new KeyboardShortcut(KeyCode.Minus),
                 new ConfigDescription(
-                    "Hotkey to zoom the map out (scroll-down also does this in map screen)",
+                    "Zoom further out. Scrolling down does the same on the map screen.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(ZoomMapHotkeySpeed = config.Bind(
                 GeneralTitle,
-                "Zoom Map Hotkey Speed",
+                "Zoom key speed",
                 2.5f,
                 new ConfigDescription(
-                    "How fast the map should zoom by hotkey",
+                    "How fast the zoom-in and zoom-out keys change the zoom. 1 is gentle, 10 jumps.",
                     new AcceptableValueRange<float>(1f, 10f),
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(DumpInfoHotkey = config.Bind(
                 GeneralTitle,
-                "Dump Info Hotkey",
+                "Export marker positions",
                 new KeyboardShortcut(KeyCode.D, KeyCode.LeftShift, KeyCode.LeftAlt),
                 new ConfigDescription(
-                    "Pressed while the map is open, dumps json MarkerDefs for extracts, loot, and switches into root of plugin folder",
+                    "While the map is open, write extract, loot, and switch positions as JSON into the Maps Expanded plugin folder. Meant for people making map packs.",
                     null,
                     new ConfigurationManagerAttributes { IsAdvanced = true })));
 
@@ -312,226 +306,208 @@ namespace MapsExtended.Config
 
             ConfigEntries.Add(MarkerPack = config.Bind(
                 DynamicMarkerTitle,
-                "Marker Pack",
+                "Icon set",
                 "Default",
                 new ConfigDescription(
-                    "PNG marker icons used for all maps. Missing icons use the default pack. Restart after installing addons with markers.",
+                    "Which folder of marker icons to use. An icon missing from that set falls back to Default. Restart the game after adding a new addon icon pack.",
                     new AcceptableValueList<string>(markerPacks.ToArray()),
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(ShowPlayerMarker = config.Bind(
                 DynamicMarkerTitle,
-                "Show Player Marker",
+                "Show you",
                 true,
                 new ConfigDescription(
-                    "If the player marker should be shown in raid",
+                    "Draw your own arrow during a raid.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(ShowFriendlyPlayerMarkersInRaid = config.Bind(
                 DynamicMarkerTitle,
-                "Show Friendly Player Markers",
+                "Show teammates",
                 true,
                 new ConfigDescription(
-                    "If friendly player markers should be shown in-raid",
+                    "Draw players who are grouped with you.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(ShowEnemyPlayerMarkersInRaid = config.Bind(
                 DynamicMarkerTitle,
-                "Show Enemy Player Markers",
+                "Show enemy PMCs",
                 false,
                 new ConfigDescription(
-                    "If enemy player markers should be shown in-raid (generally for debug)",
+                    "Draw hostile PMCs. This reveals positions you would not normally know.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(ShowScavMarkersInRaid = config.Bind(
                 DynamicMarkerTitle,
-                "Show Scav Markers",
+                "Show scavs",
                 false,
                 new ConfigDescription(
-                    "If enemy scav markers should be shown in-raid (generally for debug)",
+                    "Draw hostile scavs. This reveals positions you would not normally know.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(ShowBossMarkersInRaid = config.Bind(
                 DynamicMarkerTitle,
-                "Show Boss Markers",
+                "Show living bosses",
                 false,
                 new ConfigDescription(
-                    "If enemy boss markers should be shown in-raid",
+                    "Draw bosses that are still alive.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(ShowNonVanillaBotMarkersInRaid = config.Bind(
                 DynamicMarkerTitle,
-                "Show Non-Vanilla Bot Markers",
+                "Show modded bots",
                 true,
                 new ConfigDescription(
-                    "If non-vanilla bot markers should be shown in-raid",
+                    "Draw bots added by other mods, including custom factions.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(NonVanillaBotUseStar = config.Bind(
                 DynamicMarkerTitle,
-                "Use Star for Non-Vanilla Bots",
+                "Star icon for modded bots",
                 true,
                 new ConfigDescription(
-                    "Use a star instead of an arrow for non-vanilla bot markers",
+                    "Modded bots use a star. Turn this off and they use the same arrow as everyone else.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(ShowLockedDoorStatus = config.Bind(
                 DynamicMarkerTitle,
-                "Show Locked Door Status",
+                "Colour locks by key",
                 true,
                 new ConfigDescription(
-                    "If locked door markers should be updated with status based on key acquisition",
+                    "Recolour locked doors, keycards, and safes based on whether the key is on you, in your stash, or missing.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(ShowQuestsInRaid = config.Bind(
                 DynamicMarkerTitle,
-                "Show Quests",
+                "Show quest objectives",
                 true,
                 new ConfigDescription(
-                    "Show quest markers in raid and out of raid. Out-of-raid markers use zone positions cached the first time you visit each map in a raid.",
+                    "Mark unfinished objectives in raid and in the hideout. A hideout map only gets those pins after you have loaded into that location once, so the zone positions can be saved.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(ShowExtractsInRaid = config.Bind(
                 DynamicMarkerTitle,
-                "Show Extracts In Raid",
+                "Show extracts",
                 true,
                 new ConfigDescription(
-                    "If extracts should be shown in raid",
+                    "Mark extraction points during a raid.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(ShowExtractStatusInRaid = config.Bind(
                 DynamicMarkerTitle,
-                "Show Extracts Status In Raid",
+                "Colour extracts by status",
                 true,
                 new ConfigDescription(
-                    "If extracts should be colored according to their status in raid",
+                    "Open, closed, and requirement extracts use the colours from the Colours section. Hover one that is not open yet to see what it still needs.",
                     null,
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(ShowTransitPointsInRaid = config.Bind(
                 DynamicMarkerTitle,
-                "Show Transit Points In Raid",
+                "Show transits",
                 true,
                 new ConfigDescription(
-                    "If transits should be shown in raid",
+                    "Mark transit locations during a raid.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(ShowSecretPointsInRaid = config.Bind(
                 DynamicMarkerTitle,
-                "Show Secret Extracts In Raid",
+                "Show secret extracts",
                 true,
                 new ConfigDescription(
-                    "If secret extracts should be shown in raid",
+                    "Mark secret and code-word extracts during a raid.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(ShowDroppedBackpackInRaid = config.Bind(
                 DynamicMarkerTitle,
-                "Show Dropped Backpack In Raid",
+                "Show bags you dropped",
                 true,
                 new ConfigDescription(
-                    "If the player's dropped backpacks (not anyone elses) should be shown in raid",
-                    null,
-                    new ConfigurationManagerAttributes())));
-            
-            ConfigEntries.Add(ShowWishListItemsInRaid = config.Bind(
-                DynamicMarkerTitle,
-                "Show wish listed items In Raid",
-                true,
-                new ConfigDescription(
-                    "Shows items that are in your wishlist on the map in raid",
-                    null,
-                    new ConfigurationManagerAttributes())));
-
-            ConfigEntries.Add(ShowWishListItemsInContainers = config.Bind(
-                DynamicMarkerTitle,
-                "Show wish listed items in containers In Raid",
-                false,
-                new ConfigDescription(
-                    "Shows wish listed items inside containers without searching them",
+                    "Mark backpacks you threw on the ground. Other people's bags stay hidden.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(ShowBTRInRaid = config.Bind(
                 DynamicMarkerTitle,
-                "Show BTR In Raid",
+                "Show the BTR",
                 true,
                 new ConfigDescription(
-                    "If the BTR should be shown in raid",
+                    "Mark the BTR while it is driving the route.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(ShowAirdropsInRaid = config.Bind(
                 DynamicMarkerTitle,
-                "Show Airdrops In Raid",
+                "Show airdrops",
                 true,
                 new ConfigDescription(
-                    "If airdrops should be shown in raid when they land",
+                    "Mark an airdrop after the crate has landed.",
                     null,
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(ShowHiddenStashesInRaid = config.Bind(
                 DynamicMarkerTitle,
-                "Show Hidden Stashes In Raid",
+                "Show hidden stashes",
                 true,
                 new ConfigDescription(
-                    "If hidden stashes should be shown in raid",
+                    "Mark buried barrel caches.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(ShowFriendlyCorpsesInRaid = config.Bind(
                 DynamicMarkerTitle,
-                "Show Friendly Corpses In Raid",
+                "Show teammate bodies",
                 true,
                 new ConfigDescription(
-                    "If friendly corpses should be shown in raid",
+                    "Mark the bodies of players who were grouped with you.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(ShowKilledCorpsesInRaid = config.Bind(
                 DynamicMarkerTitle,
-                "Show Player-killed Corpses In Raid",
+                "Show bodies you killed",
                 true,
                 new ConfigDescription(
-                    "If corpses killed by the player should be shown in raid, killed bosses will be shown in another color",
+                    "Mark people you killed. Bosses you killed use the boss-body colour.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(ShowFriendlyKilledCorpsesInRaid = config.Bind(
                 DynamicMarkerTitle,
-                "Show Friendly-killed Corpses In Raid",
+                "Show bodies your team killed",
                 true,
                 new ConfigDescription(
-                    "If corpses killed by friendly players should be shown in raid, killed bosses will be shown in another color",
+                    "Mark people a teammate killed. Bosses they killed use the boss-body colour.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(ShowBossCorpsesInRaid = config.Bind(
                 DynamicMarkerTitle,
-                "Show Boss Corpses In Raid",
+                "Show boss bodies",
                 false,
                 new ConfigDescription(
-                    "If boss corpses (other than ones killed by the player) should be shown in raid",
+                    "Mark dead bosses that you and your team did not kill.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(ShowOtherCorpsesInRaid = config.Bind(
                 DynamicMarkerTitle,
-                "Show Other Corpses In Raid",
+                "Show other bodies",
                 false,
                 new ConfigDescription(
-                    "If corpses (other than friendly ones or ones killed by the player) should be shown in raid",
+                    "Mark dead players and scavs that are not teammates and were not killed by you or your team.",
                     null,
                     new ConfigurationManagerAttributes())));
 
@@ -541,82 +517,73 @@ namespace MapsExtended.Config
 
             ConfigEntries.Add(RequireMapInInventory = config.Bind(
                 ProgressionTitle,
-                "Require a map in your inventory",
+                "Need a paper map in raid",
                 false,
                 new ConfigDescription(
-                    "Requires you to have a map in your inventory in order to view the map in raid.",
+                    "During a raid, the map stays closed unless a paper map is in your inventory or rig.",
                     null,
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(ShowPmcIntelLevel = config.Bind(
                 ProgressionTitle,
-                "Intel level required to show PMCs",
+                "Intelligence Center level for PMCs",
                 0,
                 new ConfigDescription(
-                    "If intel level is at or above this value it will show PMCs",
+                    "0 shows PMCs with no Intelligence Center. 1, 2, or 3 waits until the center is at least that level.",
                     new AcceptableValueRange<int>(0, 3),
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(ShowBossIntelLevel = config.Bind(
                 ProgressionTitle,
-                "Intel level required to show bosses",
+                "Intelligence Center level for bosses",
                 0,
                 new ConfigDescription(
-                    "If intel level is at or above this value it will show bosses",
+                    "0 shows bosses with no Intelligence Center. 1, 2, or 3 waits until the center is at least that level.",
                     new AcceptableValueRange<int>(0, 3),
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(ShowScavIntelLevel = config.Bind(
                 ProgressionTitle,
-                "Intel level required to show scavs",
+                "Intelligence Center level for scavs",
                 0,
                 new ConfigDescription(
-                    "If intel level is at or above this value it will show scavs",
+                    "0 shows scavs with no Intelligence Center. 1, 2, or 3 waits until the center is at least that level.",
                     new AcceptableValueRange<int>(0, 3),
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(ShowFriendlyIntelLevel = config.Bind(
                 ProgressionTitle,
-                "Intel level required to show friendly PMCs",
+                "Intelligence Center level for teammates",
                 0,
                 new ConfigDescription(
-                    "If intel level is at or above this value it will show friendly PMCs",
+                    "0 shows teammates with no Intelligence Center. 1, 2, or 3 waits until the center is at least that level.",
                     new AcceptableValueRange<int>(0, 3),
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(ShowCorpseIntelLevel = config.Bind(
                 ProgressionTitle,
-                "Intel level required to show corpses",
+                "Intelligence Center level for bodies",
                 0,
                 new ConfigDescription(
-                    "If intel level is at or above this value it will show corpses",
+                    "0 shows bodies with no Intelligence Center. 1, 2, or 3 waits until the center is at least that level.",
                     new AcceptableValueRange<int>(0, 3),
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(ShowAirdropIntelLevel = config.Bind(
                 ProgressionTitle,
-                "Intel level required to show airdrops",
+                "Intelligence Center level for airdrops",
                 0,
                 new ConfigDescription(
-                    "If intel level is at or above this value it will show airdrops",
+                    "0 shows airdrops with no Intelligence Center. 1, 2, or 3 waits until the center is at least that level.",
                     new AcceptableValueRange<int>(0, 3),
                     new ConfigurationManagerAttributes())));
-            
-            ConfigEntries.Add(ShowWishListItemsIntelLevel = config.Bind(
-                ProgressionTitle,
-                "Intel level required to show wish listed loot items",
-                0,
-                new ConfigDescription(
-                    "If intel level is at or above this value it will show wish listed loot items",
-                    new AcceptableValueRange<int>(0, 3),
-                    new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(ShowHiddenStashIntelLevel = config.Bind(
                 ProgressionTitle,
-                "Intel level required to show hidden stashes",
+                "Intelligence Center level for hidden stashes",
                 0,
                 new ConfigDescription(
-                    "If intel level is at or above this value it will show hidden stashes",
+                    "0 shows hidden stashes with no Intelligence Center. 1, 2, or 3 waits until the center is at least that level.",
                     new AcceptableValueRange<int>(0, 3),
                     new ConfigurationManagerAttributes())));
 
@@ -624,84 +591,84 @@ namespace MapsExtended.Config
             
             #region In Raid
 
-             ConfigEntries.Add(AutoSelectLevel = config.Bind(
+            ConfigEntries.Add(AutoSelectLevel = config.Bind(
                 InRaidTitle,
-                "Auto Select Level",
+                "Follow your current floor",
                 true,
                 new ConfigDescription(
-                    "If the level should be automatically selected based on the players position in raid",
+                    "Switch the displayed floor to the height you are standing at.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(AutoCenterOnPlayerMarker = config.Bind(
                 InRaidTitle,
-                "Auto Center On Player Marker",
+                "Snap back to you",
                 true,
                 new ConfigDescription(
-                    "If the player marker should be centered when showing the map in raid (Conflicts with 'Remember Map Position')",
+                    "Each time you open the map in a raid, center it on you. Turn this off to keep the view where you left it.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(ResetZoomOnCenter = config.Bind(
                 InRaidTitle,
-                "Reset Zoom On Center",
+                "Reset zoom when centering",
                 false,
                 new ConfigDescription(
-                    "If the zoom level should be reset each time that the map is opened while in raid (Conflicts with 'Remember Map Position')",
+                    "When the map recenters on you, also jump to the zoom set below. Turning this on enables centering and turns off keeping the last view.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(RetainMapPosition = config.Bind(
                 InRaidTitle,
-                "Remember Map Position",
+                "Keep the last view",
                 false,
                 new ConfigDescription(
-                    "Should we remember the map position (Map position memory is only maintained for the current raid) (Conflicts with 'Auto Center On Player Marker' and 'Reset Zoom On Center')",
+                    "Reopen the map where you left it, for this raid only. Turning this on disables centering and zoom reset.",
                     null,
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(CenteringZoomResetPoint = config.Bind(
                 InRaidTitle,
-                "Centering On Player Zoom Level",
+                "Zoom after a reset",
                 0.15f,
                 new ConfigDescription(
-                    "What zoom level should be used as while centering on the player, with reset zoom enabled (0 is fully zoomed out, and 1 is fully zoomed in)",
+                    "Zoom used when reset-on-center is on. 0 is the whole map, 1 is as close as the map goes.",
                     new AcceptableValueRange<float>(0f, 1f),
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(ZoomMainMap = config.Bind(
                 InRaidTitle,
-                "Main map zoom",
+                "Starting zoom in raid",
                 0f,
                 new ConfigDescription(
-                    "Starting zoom for the in-raid Map tab and Peek view (ignored if reset zoom on center is on). Out-of-raid maps open fitted to the screen. (0 is fully zoomed out, and 1 is fully zoomed in)",
+                    "Zoom used the first time you open the raid map or a peek, unless reset-on-center is on. Hideout maps always open fitted to the screen. 0 is the whole map, 1 is as close as the map goes.",
                     new AcceptableValueRange<float>(0f, 1f),
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(PeekShortcut = config.Bind(
                 InRaidTitle,
-                "Peek at Map Shortcut",
+                "Peek key",
                 new KeyboardShortcut(KeyCode.M),
                 new ConfigDescription(
-                    "The keyboard shortcut to peek at the map",
+                    "Bring the map up over the raid without opening your inventory.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(HoldForPeek = config.Bind(
                 InRaidTitle,
-                "Hold for Peek",
+                "Hold for checking map",
                 true,
                 new ConfigDescription(
-                    "If the shortcut should be held to keep it open. If disabled, button toggles",
+                    "Hold the check map key to keep the map up. Turn this off and the key toggles the peek open and closed.",
                     null,
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(MapTransitionEnabled = config.Bind(
                 InRaidTitle,
-                "Peek Transition enabled",
+                "Animate view changes",
                 true,
                 new ConfigDescription(
-                    "Enable the map transition animations (When disabled everything will snap)",
+                    "Glide between the full map, the peek, and the corner map. Off, those views jump into place.",
                     null,
                     new ConfigurationManagerAttributes())));
 
@@ -716,91 +683,91 @@ namespace MapsExtended.Config
 
             ConfigEntries.Add(MiniMapEnabled = config.Bind(
                 MiniMapTitle,
-                "Mini-map enabled",
+                "Show the corner map",
                 true,
                 new ConfigDescription(
-                    "Enable the mini-map",
+                    "Keep a small map on screen during a raid.",
                     null,
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(MiniMapPosition = config.Bind(
                 MiniMapTitle,
-                "Mini-map position",
+                "Corner",
                 EMiniMapPosition.TopRight,
                 new ConfigDescription(
-                    "What corner is the mini-map displayed in",
+                    "Which corner of the screen the small map sits in.",
                     null,
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(MiniMapSizeX = config.Bind(
                 MiniMapTitle,
-                "Mini-map size horizontal",
+                "Width",
                 275.0f,
                 new ConfigDescription(
-                    "Horizontal size of the mini-map",
+                    "Width of the corner map, in pixels.",
                     new AcceptableValueRange<float>(0f, 850f),
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(MiniMapSizeY = config.Bind(
                 MiniMapTitle,
-                "Mini-map size vertical",
+                "Height",
                 275.0f,
                 new ConfigDescription(
-                    "Vertical size of the mini-map",
+                    "Height of the corner map, in pixels.",
                     new AcceptableValueRange<float>(0f, 850f),
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(MiniMapScreenOffsetX = config.Bind(
                 MiniMapTitle,
-                "Mini-map offset horizontal",
+                "Nudge sideways",
                 0.0f,
                 new ConfigDescription(
-                    "Horizontal Offset from the edge (These values update according to screen resolution, REQUIRES RESTART IF YOU CHANGED YOUR RESOLUTION)",
+                    "Extra pixels in from the side of the screen. If you change resolution, set this again and restart the game.",
                     new AcceptableValueRange<float>(-Screen.width / 4f, Screen.width),
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(MiniMapScreenOffsetY = config.Bind(
                 MiniMapTitle,
-                "Mini-map offset vertical",
+                "Nudge up or down",
                 0.0f,
                 new ConfigDescription(
-                    "Vertical offset from the edge (These values update according to screen resolution, REQUIRES RESTART IF YOU CHANGED YOUR RESOLUTION)",
+                    "Extra pixels in from the top or bottom of the screen. If you change resolution, set this again and restart the game.",
                     new AcceptableValueRange<float>(-Screen.height / 4f, Screen.height),
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(MiniMapShowOrHide = config.Bind(
                 MiniMapTitle,
-                "Show or Hide the mini-map",
+                "Show or hide key",
                 new KeyboardShortcut(KeyCode.End),
                 new ConfigDescription(
-                    "Show or hide the mini-map",
+                    "Toggle the corner map without opening the full map.",
                     null,
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(ZoomMiniMap = config.Bind(
                 MiniMapTitle,
-                "Mini map zoom",
+                "Corner map zoom",
                 0.33f,
                 new ConfigDescription(
-                    "What zoom level should be used for the mini map. (0 is fully zoomed out, and 15 is fully zoomed in)",
+                    "How close the corner map is. 0 shows the whole map, 1 is as close as it goes.",
                     new AcceptableValueRange<float>(0f, 1f),
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(ZoomInMiniMapHotkey = config.Bind(
                 MiniMapTitle,
-                "Zoom in key bind",
+                "Zoom the corner map in",
                 new KeyboardShortcut(KeyCode.Keypad8),
                 new ConfigDescription(
-                    "Zoom in on mini map key bind",
+                    "Move the corner map closer.",
                     null,
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(ZoomOutMiniMapHotkey = config.Bind(
                 MiniMapTitle,
-                "Zoom out key bind",
+                "Zoom the corner map out",
                 new KeyboardShortcut(KeyCode.Keypad5),
                 new ConfigDescription(
-                    "Zoom out on mini map key bind",
+                    "Pull the corner map back.",
                     null,
                     new ConfigurationManagerAttributes())));
             
@@ -812,271 +779,253 @@ namespace MapsExtended.Config
 
             ConfigEntries.Add(PlayerColor = config.Bind(
                 MarkerColors,
-                "Your player marker color",
+                "Your arrow",
                 new Color(0, 1, 0),
                 new ConfigDescription(
-                    "Color of the marker",
+                    "Colour of your own marker.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(FriendlyPlayerColor = config.Bind(
                 MarkerColors,
-                "Friendly player marker color",
+                "Teammate arrows",
                 new Color(0.5f, 0.5f, 1f),
                 new ConfigDescription(
-                    "Color of grouped friendly players",
+                    "Colour of players grouped with you.",
                     null,
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(PmcBearColor = config.Bind(
                 MarkerColors,
-                "Bear marker color",
+                "Bear arrows",
                 new Color(1, 0, 0),
                 new ConfigDescription(
-                    "Color of the marker",
+                    "Colour of Bear PMCs.",
                     null,
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(PmcUsecColor = config.Bind(
                 MarkerColors,
-                "Usec marker color",
+                "USEC arrows",
                 new Color(1, 1, 0),
                 new ConfigDescription(
-                    "Color of the marker",
+                    "Colour of USEC PMCs.",
                     null,
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(ScavColor = config.Bind(
                 MarkerColors,
-                "Scav marker color",
+                "Scav arrows",
                 new Color(1, 0.45f, 0.007f),
                 new ConfigDescription(
-                    "Color of the marker",
+                    "Colour of scavs.",
                     null,
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(BossColor = config.Bind(
                 MarkerColors,
-                "Boss marker color",
+                "Boss arrows",
                 new Color(1f, 0.45f, 0.007f),
                 new ConfigDescription(
-                    "Color of the marker",
+                    "Colour of living bosses.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(NonVanillaBotColor = config.Bind(
                 MarkerColors,
-                "Non-Vanilla bot marker color",
+                "Modded bot arrows",
                 new Color(0.33f, 0.15f, 0.15f),
                 new ConfigDescription(
-                    "Color of non-vanilla bot markers",
-                    null,
-                    new ConfigurationManagerAttributes())));
-            
-            ConfigEntries.Add(AirdropColor = config.Bind(
-                MarkerColors,
-                "Airdrop marker color",
-                new Color(1f, 0.30f, 0.007f),
-                new ConfigDescription(
-                    "Color of the marker",
-                    null,
-                    new ConfigurationManagerAttributes())));
-            
-            ConfigEntries.Add(BackpackColor = config.Bind(
-                MarkerColors,
-                "Backpack marker color",
-                new Color(0f, 1f, 0.0f),
-                new ConfigDescription(
-                    "Color of the marker",
-                    null,
-                    new ConfigurationManagerAttributes())));
-            
-            ConfigEntries.Add(LootItemColor = config.Bind(
-                MarkerColors,
-                "Loot marker color",
-                new Color(0.98f, 0.81f, 0.007f),
-                new ConfigDescription(
-                    "Color of the marker",
+                    "Colour of bots added by other mods, when a faction tint is not used.",
                     null,
                     new ConfigurationManagerAttributes())));
 
-            ConfigEntries.Add(ContainerLootItemColor = config.Bind(
+            ConfigEntries.Add(AirdropColor = config.Bind(
                 MarkerColors,
-                "Wishlisted container loot marker color",
-                new Color(0.77f, 0.81f, 0.7f),
+                "Airdrop crates",
+                new Color(1f, 0.30f, 0.007f),
                 new ConfigDescription(
-                    "Color of wish listed item markers inside world containers",
+                    "Colour of landed airdrop crates.",
                     null,
                     new ConfigurationManagerAttributes())));
-            
+
+            ConfigEntries.Add(BackpackColor = config.Bind(
+                MarkerColors,
+                "Bags you dropped",
+                new Color(0f, 1f, 0.0f),
+                new ConfigDescription(
+                    "Colour of backpacks you threw on the ground.",
+                    null,
+                    new ConfigurationManagerAttributes())));
+
             ConfigEntries.Add(KilledCorpseColor = config.Bind(
                 MarkerColors,
-                "Killed corpse marker color",
+                "Bodies you killed",
                 new Color(1f, 0.0f, 0.0f),
                 new ConfigDescription(
-                    "Color of the marker",
+                    "Colour of people you killed, other than bosses.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(KilledBossColor = config.Bind(
                 MarkerColors,
-                "Killed boss corpse marker color",
+                "Boss bodies",
                 new Color(1f, 0.0f, 1.0f),
                 new ConfigDescription(
-                    "Color of the marker",
+                    "Colour of dead bosses, including ones you or a teammate killed.",
                     null,
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(KilledOtherColor = config.Bind(
                 MarkerColors,
-                "Killed by other corpse marker color",
+                "Other bodies",
                 new Color(1f, 1f, 1f),
                 new ConfigDescription(
-                    "Color of the marker",
+                    "Colour of bodies that are not teammates and were not killed by your group.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(FriendlyCorpseColor = config.Bind(
                 MarkerColors,
-                "Friendly corpse marker color",
+                "Teammate bodies",
                 new Color(0.5f, 0.5f, 1f),
                 new ConfigDescription(
-                    "Color of friendly player corpses",
+                    "Colour of dead players who were grouped with you.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(FriendlyKilledCorpseColor = config.Bind(
                 MarkerColors,
-                "Friendly-killed corpse marker color",
+                "Bodies your team killed",
                 new Color(0.75f, 0.25f, 0.5f),
                 new ConfigDescription(
-                    "Color of corpses killed by a friendly player",
+                    "Colour of people a teammate killed, other than bosses.",
                     null,
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(BtrColor = config.Bind(
                 MarkerColors,
-                "BTR marker color",
+                "The BTR",
                 new Color(0.21f, 0.39f, 0.16f),
                 new ConfigDescription(
-                    "Color of the marker",
+                    "Colour of the BTR.",
                     null,
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(ExtractDefaultColor = config.Bind(
                 MarkerColors,
-                "Extract default marker color",
+                "Extract, status off",
                 new Color(1f, 0.92f, 0.01f),
                 new ConfigDescription(
-                    "Color of the marker",
+                    "Colour of extracts when status colours are turned off.",
                     null,
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(ExtractOpenColor = config.Bind(
                 MarkerColors,
-                "Extract open marker color",
+                "Extract you can use",
                 new Color(0f, 1f, 0f),
                 new ConfigDescription(
-                    "Color of the marker",
+                    "Colour of an extract that is open.",
                     null,
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(ExtractClosedColor = config.Bind(
                 MarkerColors,
-                "Extract closed marker color",
+                "Extract that is shut",
                 new Color(1f, 0f, 0f),
                 new ConfigDescription(
-                    "Color of the marker",
+                    "Colour of an extract that is closed.",
                     null,
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(ExtractHasRequirementsColor = config.Bind(
                 MarkerColors,
-                "Extract has requirements marker color",
+                "Extract that still needs something",
                 new Color(1f, 0.92f, 0.01f),
                 new ConfigDescription(
-                    "Color of the marker",
+                    "Colour of an extract that is waiting on a switch, payment, or note.",
                     null,
                     new ConfigurationManagerAttributes())));
-            
+
             ConfigEntries.Add(TransPointColor = config.Bind(
                 MarkerColors,
-                "Transit point marker color",
+                "Transits",
                 new Color(1f, 0.62f, 0.20f),
                 new ConfigDescription(
-                    "Color of the marker",
+                    "Colour of transit points.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(SecretPointColor = config.Bind(
                 MarkerColors,
-                "Secret exfil point marker color",
+                "Secret extracts",
                 new Color(0.1f, 0.6f, 0.6f),
                 new ConfigDescription(
-                    "Color of the marker",
+                    "Colour of secret and code-word extracts.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(HiddenStashColor = config.Bind(
                 MarkerColors,
-                "Hidden stash marker color",
+                "Hidden stashes",
                 new Color(1f, 0.92f, 0.01f),
                 new ConfigDescription(
-                    "Color of the marker",
+                    "Colour of buried barrel caches.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(QuestColor = config.Bind(
                 MarkerColors,
-                "Quest marker color",
+                "Quest objectives",
                 Color.green,
                 new ConfigDescription(
-                    "Color of quest objective markers",
+                    "Colour of unfinished quest pins.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(LockedDoorHasKeyColor = config.Bind(
                 MarkerColors,
-                "Locked door, key on you",
+                "Lock, key is on you",
                 Color.green,
                 new ConfigDescription(
-                    "Color of locked doors when you are carrying the key",
+                    "Colour of a locked door, keycard door, or safe when you are carrying the key.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(LockedDoorInStashColor = config.Bind(
                 MarkerColors,
-                "Locked door, key in stash",
+                "Lock, key is in your stash",
                 Color.yellow,
                 new ConfigDescription(
-                    "Color of locked doors when the key is in your stash but not on you",
+                    "Colour of a lock when the key is in your stash and not on you.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(LockedDoorMissingKeyColor = config.Bind(
                 MarkerColors,
-                "Locked door, key missing",
+                "Lock, key missing",
                 Color.red,
                 new ConfigDescription(
-                    "Color of locked doors when you do not have the key",
+                    "Colour of a lock when you do not have the key.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(LockedDoorDefaultColor = config.Bind(
                 MarkerColors,
-                "Locked door marker color",
+                "Lock, key colours off",
                 Color.yellow,
                 new ConfigDescription(
-                    "Color of locked doors when door status colouring is turned off",
+                    "Colour of every lock when key colouring is turned off.",
                     null,
                     new ConfigurationManagerAttributes())));
 
             ConfigEntries.Add(HeliCrashColor = config.Bind(
                 MarkerColors,
-                "Heli crash marker color",
+                "Crashed helicopter",
                 Color.Lerp(Color.red, Color.white, 0.333f),
                 new ConfigDescription(
-                    "Color of the crashed helicopter marker",
+                    "Colour of a SamSWAT HeliCrash site. Shown only when that mod is installed.",
                     null,
                     new ConfigurationManagerAttributes
                     {
@@ -1089,12 +1038,12 @@ namespace MapsExtended.Config
 
             ConfigEntries.Add(ShowHeliCrashMarker = config.Bind(
                 ExternModSupport,
-                "Show Heli Crash Marker",
+                "Mark helicopter crashes",
                 true,
                 new ConfigDescription(
-                    "If the heli crash site should be marked in raid",
+                    "Draw the SamSWAT HeliCrash site during a raid. This entry only appears when that mod is installed.",
                     null,
-                    new ConfigurationManagerAttributes { 
+                    new ConfigurationManagerAttributes {
                         Browsable = ModDetection.HeliCrashLoaded
                     })));
             
@@ -1122,7 +1071,7 @@ namespace MapsExtended.Config
 
             var preference = _config.Bind(MapSelectionTitle, Uri.EscapeDataString(location),
                 "Automatic", new ConfigDescription(
-                    "Map used in raid. Automatic prefers a bundled map, then a matching addon. Changes apply when the map next opens.",
+                    "Art used for this location. Automatic picks a bundled map first, then a matching addon. The new art shows the next time that map opens.",
                     new AcceptableValueList<string>(choices),
                     new ConfigurationManagerAttributes()));
             
