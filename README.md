@@ -53,7 +53,21 @@
 ## Requirements
 
 - SPT 4.1.x
-- Soft dependencies (optional, unlock related packs / colours): Map Variants by LennoxP90, Classic Maps ports by LennoxP90, Manimal's Interchange / Labs / Icebreaker backports, MoreBotsAPI, FIKA
+- **Soft dependencies (optional, unlock related map packs, or features):** Map Variants by LennoxP90, Classic Maps ports by LennoxP90, Manimal's Interchange / Labs / Icebreaker backports, MoreBotsAPI, FIKA
+
+## Compatibility
+
+This mod is not compatible with:
+
+- Dynamic Maps
+- Dynamic Maps Extended
+- Dynamic Maps Plus
+
+This mod is compatible with:
+
+- LennoxP90's Map Variants
+- Manimal's backports
+- LennoxP90's Classic ports
 
 ## F12 config
 
