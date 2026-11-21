@@ -69,7 +69,7 @@ namespace MapsExtended.Config
 
         #region In Raid
 
-        private const string InRaidTitle = "4. In-Raid";
+        private const string InRaidTitle = "3. In-Raid";
         public static ConfigEntry<bool> ResetZoomOnCenter;
         public static ConfigEntry<float> CenteringZoomResetPoint;
         public static ConfigEntry<float> ZoomMainMap;
@@ -83,7 +83,7 @@ namespace MapsExtended.Config
 
         #region Mini Map
 
-        private const string MiniMapTitle = "5. Minimap";
+        private const string MiniMapTitle = "4. Minimap";
         public static ConfigEntry<bool> MiniMapEnabled;
         public static ConfigEntry<EMiniMapPosition> MiniMapPosition;
         public static ConfigEntry<float> MiniMapSizeX;
@@ -100,7 +100,7 @@ namespace MapsExtended.Config
 
         #region Colors
 
-        private const string MarkerColors = "6. Colours";
+        private const string MarkerColors = "5. Colours";
         public static ConfigEntry<Color> PlayerColor;
         public static ConfigEntry<Color> FriendlyPlayerColor;
         public static ConfigEntry<Color> PmcBearColor;
@@ -134,11 +134,11 @@ namespace MapsExtended.Config
         
         #region External Mod Support
         
-        private const string ExternModSupport = "7. Extra mods";
+        private const string ExternModSupport = "6. Extra mods";
         public static ConfigEntry<bool> ShowHeliCrashMarker;
         
         
-        private const string MapSelectionTitle = "8. Map styles";
+        private const string MapSelectionTitle = "7. Map styles";
         
         #endregion
         

@@ -16,7 +16,7 @@ All notable changes to Maps Expanded are recorded here. Newer versions are at th
   - Locked doors when the key is on you, in your stash, or missing
   - Locked doors when status colouring is turned off
   - Crashed helicopter sites, shown in F12 only when SamSWAT HeliCrash is installed
-- Colour changes in **6. Colours** apply to markers already on the map, including the colours that already had a setting (you, Bear, USEC, scavs, bosses, modded bots, extracts, transits, secrets, backpacks, airdrops, the BTR, hidden stashes, and corpses).
+- Colour changes in **5. Colours** apply to markers already on the map, including the colours that already had a setting (you, Bear, USEC, scavs, bosses, modded bots, extracts, transits, secrets, backpacks, airdrops, the BTR, hidden stashes, and corpses).
 - Hovering a quest marker shows the objective, using the same description as the quest log. The quest name stays under the icon. Several objectives on the same spot are listed together.
 - Hovering an extract that is not open yet shows what it still needs. That is the code-word note for a secret extract, the switch that has to be thrown, a payment, or another requirement taken from the extract itself. The note clears once the extract can be used.
 

@@ -45,7 +45,7 @@ namespace MapsExtended.Integration
             _initialized = true;
             _config = config;
             Enabled = config.Bind(
-                "9. Faction Colours",
+                "8. Faction Colours",
                 "Enable faction colours",
                 true,
                 new ConfigDescription(
@@ -154,7 +154,7 @@ namespace MapsExtended.Integration
         private static void Bind(ConfigFile config, string name, Color colour, int order)
         {
             var entry = config.Bind(
-                "9. Faction Colours",
+                "8. Faction Colours",
                 name,
                 colour,
                 new ConfigDescription(
@@ -270,7 +270,7 @@ namespace MapsExtended.Integration
                     }
 
                     var entry = _config.Bind(
-                        "9a. Dynamic faction grouping",
+                        "8a. Dynamic faction grouping",
                         "Group with - " + ConfigName(bot.role),
                         AutomaticGroup,
                         new ConfigDescription(
