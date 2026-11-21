@@ -17,7 +17,7 @@ public record ModMetadata : IModMetadata
     public string Name { get; init; } = "Maps Expanded";
     public string Author { get; init; } = "Dark";
     public List<string>? Contributors { get; init; } = ["Maps Expanded contributors", "mpstark", "dirtbikercj", "acidphantasm"];
-    public SemanticVersioning.Version Version { get; init; } = new("1.0.0");
+    public SemanticVersioning.Version Version { get; init; } = new("1.1.0");
     public SemanticVersioning.Range SptVersion { get; init; } = new("~4.1.0");
     public List<string>? Incompatibilities { get; init; } = ["com.mpstark.dynamicmaps", "com.blackhawk.dynamicmapsextended", "com.dark.dynamicmapsplus"];
     public Dictionary<string, SemanticVersioning.Range>? ModDependencies { get; init; }

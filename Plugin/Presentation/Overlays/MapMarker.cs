@@ -80,10 +80,35 @@ namespace MapsExtended.Presentation.Overlays
         private static readonly Vector2 LabelSizeMultiplier = new Vector2(2.5f, 2f);
         private static readonly float MarkerMinFontSize = 9f;
         private static readonly float MarkerMaxFontSize = 13f;
+        private const float HoverLabelWidth = 240f;
+        private const float HoverLabelFontSize = 12f;
 
         public event Action<ILayerBound> OnPositionChanged;
 
         public string Text { get; private set; }
+        public string Description { get; private set; } = "";
+
+        public void SetDescription(string description)
+        {
+            description ??= "";
+            if (Description == description)
+            {
+                return;
+            }
+
+            // Hide while the old text is still set, so the label returns to the name.
+            if (_isInFullReveal && !string.IsNullOrEmpty(Description))
+            {
+                HideDescription();
+            }
+
+            Description = description;
+
+            if (_isInFullReveal && !string.IsNullOrEmpty(Description))
+            {
+                ShowDescription();
+            }
+        }
         public string Category { get; private set; }
         public MapView ContainingMapView { get; set; }
 
@@ -171,6 +196,7 @@ namespace MapsExtended.Presentation.Overlays
             var mapMarker = Create<MapMarker>(parent, def.Text, def.Category, def.ImagePath, def.Color, def.Position, size,
                                               def.Pivot, degreesRotation, scale, def.ShowInRaid, def.Sprite);
             mapMarker.AssociatedItemId = def.AssociatedItemId;
+            mapMarker.Description = def.Description ?? "";
 
             return mapMarker;
         }
@@ -237,6 +263,7 @@ namespace MapsExtended.Presentation.Overlays
             marker.Label.fontSizeMin = MarkerMinFontSize;
             marker.Label.fontSizeMax = MarkerMaxFontSize;
             marker.Label.text = marker.Text;
+            marker.Label.raycastTarget = false;
 
             marker._hasSetOutline = UIUtils.TrySetTMPOutline(marker.Label);
 
@@ -346,13 +373,44 @@ namespace MapsExtended.Presentation.Overlays
 
             _isInFullReveal = true;
             transform.SetAsLastSibling();
+            ShowDescription();
             HandleNewLayerStatus(LayerStatus.FullReveal);
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
             _isInFullReveal = false;
+            HideDescription();
             OnPositionChanged?.Invoke(this);
+        }
+
+        private void ShowDescription()
+        {
+            if (Label == null || string.IsNullOrEmpty(Description))
+            {
+                return;
+            }
+
+            var text = string.IsNullOrEmpty(Text) ? Description : Text + "\n" + Description;
+            Label.enableAutoSizing = false;
+            Label.fontSize = HoverLabelFontSize;
+            Label.text = text;
+            var height = Label.GetPreferredValues(text, HoverLabelWidth, 0f).y;
+            Label.rectTransform.sizeDelta = new Vector2(HoverLabelWidth, Mathf.Max(height, HoverLabelFontSize));
+        }
+
+        private void HideDescription()
+        {
+            if (Label == null || string.IsNullOrEmpty(Description))
+            {
+                return;
+            }
+
+            Label.enableAutoSizing = true;
+            Label.fontSizeMin = MarkerMinFontSize;
+            Label.fontSizeMax = MarkerMaxFontSize;
+            Label.text = Text;
+            Label.rectTransform.sizeDelta = _size * LabelSizeMultiplier;
         }
 
         private void TrySetOutlineAndResize()

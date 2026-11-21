@@ -11,7 +11,7 @@ Upstream projects (MIT software incorporated into Maps Expanded)
 ----------------------------------------------------------------
 
 1. DynamicMaps / SPT-DynamicMaps
-   - Source: https://github.com/acidphantasm/SPT-DynamicMaps (originally mpstark)
+   - Source: https://github.com/acidphantasm/SPT-DynamicMaps 
    - Licence: MIT — Copyright (c) Michael P. Starkweather and contributors
    - Used for: core in-raid / out-of-raid map UI, markers, patches, server map items
 

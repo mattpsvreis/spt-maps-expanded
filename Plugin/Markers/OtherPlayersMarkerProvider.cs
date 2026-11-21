@@ -19,7 +19,6 @@ namespace MapsExtended.Markers
         
         private const string FriendlyPlayerCategory = "Friendly Player";
         private const string FriendlyPlayerImagePath = ArrowImagePath;
-        private static readonly Color FriendlyPlayerColor = Color.Lerp(Color.blue, Color.white, 0.5f);
 
         private const string EnemyPlayerCategory = "Enemy Player";
         private const string EnemyPlayerImagePath = ArrowImagePath;
@@ -227,7 +226,7 @@ namespace MapsExtended.Markers
             {
                 category = FriendlyPlayerCategory;
                 imagePath = FriendlyPlayerImagePath;
-                color = FriendlyPlayerColor;
+                color = Settings.FriendlyPlayerColor.Value;
             }
             // Bosses (including UNTAR leads via FactionColours) before NonVanillaBot —
             // custom bosses are usually role>195 and would otherwise lose star/boss visibility.

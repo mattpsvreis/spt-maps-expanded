@@ -79,6 +79,15 @@ namespace MapsExtended.Markers
             _map = null;
         }
 
+        public override void OnColorsChanged(MapView map)
+        {
+            var color = Settings.QuestColor.Value;
+            foreach (var marker in _questMarkers)
+            {
+                marker.Color = color;
+            }
+        }
+
         private void SubscribeToQuests()
         {
             var player = GameUtils.GetMainPlayer();

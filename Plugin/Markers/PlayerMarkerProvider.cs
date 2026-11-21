@@ -41,6 +41,14 @@ namespace MapsExtended.Markers
             TryRemoveMarker();
         }
 
+        public override void OnColorsChanged(MapView map)
+        {
+            if (_playerMarker != null)
+            {
+                _playerMarker.Color = Settings.PlayerColor.Value;
+            }
+        }
+
         private void TryAddMarker(MapView map)
         {
             if (_playerMarker is not null)

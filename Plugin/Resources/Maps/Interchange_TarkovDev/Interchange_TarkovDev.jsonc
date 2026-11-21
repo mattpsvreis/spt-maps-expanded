@@ -578,7 +578,7 @@
     },
     {
       "Text": "Object #11SR Saferoom",
-      "ImagePath": "Markers/door_with_lock.png",
+      "ImagePath": "Markers/door_keycard_with_lock.png",
       "Position": { "x": -51.9328041, "y": 45.8337746, "z": 22.35359 },
       "Category": "LockedDoor",
       "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
@@ -586,7 +586,7 @@
     },
     {
       "Text": "Object #21WS",
-      "ImagePath": "Markers/door_with_lock.png",
+      "ImagePath": "Markers/door_keycard_with_lock.png",
       "Position": { "x": 140.195663, "y": 263.315277, "z": 25.2079964 },
       "Category": "LockedDoor",
       "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },

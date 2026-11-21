@@ -119,6 +119,7 @@ namespace MapsExtended.Config
 
         private const string MarkerColors = "6. Marker Colors";
         public static ConfigEntry<Color> PlayerColor;
+        public static ConfigEntry<Color> FriendlyPlayerColor;
         public static ConfigEntry<Color> PmcBearColor;
         public static ConfigEntry<Color> PmcUsecColor;
         public static ConfigEntry<Color> ScavColor;
@@ -131,6 +132,8 @@ namespace MapsExtended.Config
         public static ConfigEntry<Color> KilledCorpseColor;
         public static ConfigEntry<Color> KilledBossColor;
         public static ConfigEntry<Color> KilledOtherColor;
+        public static ConfigEntry<Color> FriendlyCorpseColor;
+        public static ConfigEntry<Color> FriendlyKilledCorpseColor;
         public static ConfigEntry<Color> BtrColor;
         public static ConfigEntry<Color> ExtractDefaultColor;
         public static ConfigEntry<Color> ExtractOpenColor;
@@ -139,6 +142,12 @@ namespace MapsExtended.Config
         public static ConfigEntry<Color> TransPointColor;
         public static ConfigEntry<Color> SecretPointColor;
         public static ConfigEntry<Color> HiddenStashColor;
+        public static ConfigEntry<Color> QuestColor;
+        public static ConfigEntry<Color> LockedDoorHasKeyColor;
+        public static ConfigEntry<Color> LockedDoorInStashColor;
+        public static ConfigEntry<Color> LockedDoorMissingKeyColor;
+        public static ConfigEntry<Color> LockedDoorDefaultColor;
+        public static ConfigEntry<Color> HeliCrashColor;
         
         #endregion
         
@@ -809,6 +818,15 @@ namespace MapsExtended.Config
                     "Color of the marker",
                     null,
                     new ConfigurationManagerAttributes())));
+
+            ConfigEntries.Add(FriendlyPlayerColor = config.Bind(
+                MarkerColors,
+                "Friendly player marker color",
+                new Color(0.5f, 0.5f, 1f),
+                new ConfigDescription(
+                    "Color of grouped friendly players",
+                    null,
+                    new ConfigurationManagerAttributes())));
             
             ConfigEntries.Add(PmcBearColor = config.Bind(
                 MarkerColors,
@@ -917,6 +935,24 @@ namespace MapsExtended.Config
                     "Color of the marker",
                     null,
                     new ConfigurationManagerAttributes())));
+
+            ConfigEntries.Add(FriendlyCorpseColor = config.Bind(
+                MarkerColors,
+                "Friendly corpse marker color",
+                new Color(0.5f, 0.5f, 1f),
+                new ConfigDescription(
+                    "Color of friendly player corpses",
+                    null,
+                    new ConfigurationManagerAttributes())));
+
+            ConfigEntries.Add(FriendlyKilledCorpseColor = config.Bind(
+                MarkerColors,
+                "Friendly-killed corpse marker color",
+                new Color(0.75f, 0.25f, 0.5f),
+                new ConfigDescription(
+                    "Color of corpses killed by a friendly player",
+                    null,
+                    new ConfigurationManagerAttributes())));
             
             ConfigEntries.Add(BtrColor = config.Bind(
                 MarkerColors,
@@ -989,6 +1025,63 @@ namespace MapsExtended.Config
                     "Color of the marker",
                     null,
                     new ConfigurationManagerAttributes())));
+
+            ConfigEntries.Add(QuestColor = config.Bind(
+                MarkerColors,
+                "Quest marker color",
+                Color.green,
+                new ConfigDescription(
+                    "Color of quest objective markers",
+                    null,
+                    new ConfigurationManagerAttributes())));
+
+            ConfigEntries.Add(LockedDoorHasKeyColor = config.Bind(
+                MarkerColors,
+                "Locked door, key on you",
+                Color.green,
+                new ConfigDescription(
+                    "Color of locked doors when you are carrying the key",
+                    null,
+                    new ConfigurationManagerAttributes())));
+
+            ConfigEntries.Add(LockedDoorInStashColor = config.Bind(
+                MarkerColors,
+                "Locked door, key in stash",
+                Color.yellow,
+                new ConfigDescription(
+                    "Color of locked doors when the key is in your stash but not on you",
+                    null,
+                    new ConfigurationManagerAttributes())));
+
+            ConfigEntries.Add(LockedDoorMissingKeyColor = config.Bind(
+                MarkerColors,
+                "Locked door, key missing",
+                Color.red,
+                new ConfigDescription(
+                    "Color of locked doors when you do not have the key",
+                    null,
+                    new ConfigurationManagerAttributes())));
+
+            ConfigEntries.Add(LockedDoorDefaultColor = config.Bind(
+                MarkerColors,
+                "Locked door marker color",
+                Color.yellow,
+                new ConfigDescription(
+                    "Color of locked doors when door status colouring is turned off",
+                    null,
+                    new ConfigurationManagerAttributes())));
+
+            ConfigEntries.Add(HeliCrashColor = config.Bind(
+                MarkerColors,
+                "Heli crash marker color",
+                Color.Lerp(Color.red, Color.white, 0.333f),
+                new ConfigDescription(
+                    "Color of the crashed helicopter marker",
+                    null,
+                    new ConfigurationManagerAttributes
+                    {
+                        Browsable = ModDetection.HeliCrashLoaded
+                    })));
             
             #endregion
             

@@ -38,6 +38,7 @@ namespace MapsExtended.Core
     public class MapMarkerDef
     {
         public string Text { get; set; } = "";
+        public string Description { get; set; } = "";
 
         [JsonRequired]
         public string ImagePath { get; set; }

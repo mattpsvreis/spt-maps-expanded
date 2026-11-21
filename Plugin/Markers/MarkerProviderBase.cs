@@ -35,5 +35,9 @@ namespace MapsExtended.Markers
         public virtual void OnDisable(MapView map)
         {
         }
+
+        public virtual void OnColorsChanged(MapView map)
+        {
+        }
     }
 }

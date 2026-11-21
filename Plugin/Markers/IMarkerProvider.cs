@@ -16,5 +16,7 @@ namespace MapsExtended.Markers
         void OnMapChanged(MapView map, MapDef mapDef);
 
         void OnDisable(MapView map);
+
+        void OnColorsChanged(MapView map);
     }
 }

@@ -91,6 +91,14 @@ public class SecretMarkerProvider : MarkerProviderBase
         TryRemoveMarkers();
     }
 
+    public override void OnColorsChanged(MapView map)
+    {
+        foreach (var point in _secretMarkers.Keys)
+        {
+            UpdateSecretExtractStatus(point, point.Status);
+        }
+    }
+
     public void RefreshMarkers(MapView map)
     {
         foreach (var secret in _secretMarkers.Keys.ToList())
@@ -154,6 +162,7 @@ public class SecretMarkerProvider : MarkerProviderBase
         }
 
         var marker = _secretMarkers[point as SecretExfiltrationPoint];
+        marker.SetDescription(ExtractRequirementText.Describe(point));
         if (!_showExtractStatusInRaid)
         {
             marker.Color = Settings.SecretPointColor.Value;

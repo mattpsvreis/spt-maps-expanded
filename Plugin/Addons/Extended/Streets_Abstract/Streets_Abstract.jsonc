@@ -1049,6 +1049,30 @@
       "Category": "LockedDoor",
       "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
       "AssociatedItemId": "64ccc1fe088064307e14a6f7"
+    },
+    {
+      "Text": "Housing office first floor safe",
+      "ImagePath": "Markers/safe_with_lock.png",
+      "Position": { "x": 78.59352, "y": 124.437378, "z": 1.328997 },
+      "Category": "LockedDoor",
+      "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
+      "AssociatedItemId": "63a39e6acd6db0635c1975fe"
+    },
+    {
+      "Text": "Housing office second floor safe",
+      "ImagePath": "Markers/safe_with_lock.png",
+      "Position": { "x": 76.57499, "y": 132.901367, "z": 4.36699724 },
+      "Category": "LockedDoor",
+      "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
+      "AssociatedItemId": "63a39e5b234195315d4020bf"
+    },
+    {
+      "Text": "Apartment locked room safe",
+      "ImagePath": "Markers/safe_with_lock.png",
+      "Position": { "x": 58.10759, "y": 337.684021, "z": 6.26939726 },
+      "Category": "LockedDoor",
+      "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
+      "AssociatedItemId": "63a39ddda3a2b32b5f6e007a"
     }
     // {    // goshan cash register
     //     "Text": "door 55",
@@ -1098,29 +1122,5 @@
     //     "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
     //     "AssociatedItemId": "5ad7247386f7747487619dc3"
     // },
-    // {    // unknown
-    //     "Text": "door 61",
-    //     "ImagePath": "Markers/door_with_lock.png",
-    //     "Position": { "x": 78.59352, "y": 124.437378, "z": 1.328997 },
-    //     "Category": "LockedDoor",
-    //     "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
-    //     "AssociatedItemId": "63a39e6acd6db0635c1975fe"
-    // },
-    // {    // unknown
-    //     "Text": "door 62",
-    //     "ImagePath": "Markers/door_with_lock.png",
-    //     "Position": { "x": 76.57499, "y": 132.901367, "z": 4.36699724 },
-    //     "Category": "LockedDoor",
-    //     "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
-    //     "AssociatedItemId": "63a39e5b234195315d4020bf"
-    // },
-    // {   // unknown
-    //     "Text": "door 63",
-    //     "ImagePath": "Markers/door_with_lock.png",
-    //     "Position": { "x": 58.10759, "y": 337.684021, "z": 6.26939726 },
-    //     "Category": "LockedDoor",
-    //     "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
-    //     "AssociatedItemId": "63a39ddda3a2b32b5f6e007a"
-    // }
   ]
 }

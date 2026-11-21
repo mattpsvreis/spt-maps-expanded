@@ -277,7 +277,7 @@
     },
     {
       "Text": "Infirmary (Blue)",
-      "ImagePath": "Markers/door_with_lock.png",
+      "ImagePath": "Markers/door_keycard_with_lock.png",
       "Position": { "x": -123.229095, "y": -406.524384, "z": 1.03631592 },
       "Category": "LockedDoor",
       "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
@@ -285,7 +285,7 @@
     },
     {
       "Text": "Sterile Lab (Green)",
-      "ImagePath": "Markers/door_with_lock.png",
+      "ImagePath": "Markers/door_keycard_with_lock.png",
       "Position": { "x": -135.89798, "y": -346.9675, "z": 5.185806 },
       "Category": "LockedDoor",
       "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
@@ -293,7 +293,7 @@
     },
     {
       "Text": "Sterile Lab (Green)",
-      "ImagePath": "Markers/door_with_lock.png",
+      "ImagePath": "Markers/door_keycard_with_lock.png",
       "Position": { "x": -138.6131, "y": -346.966125, "z": 5.25222349 },
       "Category": "LockedDoor",
       "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
@@ -301,7 +301,7 @@
     },
     {
       "Text": "Card with a Blue Marking",
-      "ImagePath": "Markers/door_with_lock.png",
+      "ImagePath": "Markers/door_keycard_with_lock.png",
       "Position": { "x": -130.268463, "y": -339.944275, "z": 5.15560675 },
       "Category": "LockedDoor",
       "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
@@ -309,7 +309,7 @@
     },
     {
       "Text": "Security #2 (Yellow)",
-      "ImagePath": "Markers/door_with_lock.png",
+      "ImagePath": "Markers/door_keycard_with_lock.png",
       "Position": { "x": -212.695, "y": -376.538, "z": 5.145301 },
       "Category": "LockedDoor",
       "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
@@ -317,7 +317,7 @@
     },
     {
       "Text": "Test Room (Black)",
-      "ImagePath": "Markers/door_with_lock.png",
+      "ImagePath": "Markers/door_keycard_with_lock.png",
       "Position": { "x": -132.893, "y": -348.72, "z": 1.43501759 },
       "Category": "LockedDoor",
       "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
@@ -325,7 +325,7 @@
     },
     {
       "Text": "Test Room (Black)",
-      "ImagePath": "Markers/door_with_lock.png",
+      "ImagePath": "Markers/door_keycard_with_lock.png",
       "Position": { "x": -128.794, "y": -349.91507, "z": 1.43701744 },
       "Category": "LockedDoor",
       "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
@@ -333,7 +333,7 @@
     },
     {
       "Text": "Security Office (Violet)",
-      "ImagePath": "Markers/door_with_lock.png",
+      "ImagePath": "Markers/door_keycard_with_lock.png",
       "Position": { "x": -261.993, "y": -317.240021, "z": 5.147805 },
       "Category": "LockedDoor",
       "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
@@ -341,7 +341,7 @@
     },
     {
       "Text": "Security Office (Red)",
-      "ImagePath": "Markers/door_with_lock.png",
+      "ImagePath": "Markers/door_keycard_with_lock.png",
       "Position": { "x": -257.222015, "y": -322.925018, "z": 5.24803066 },
       "Category": "LockedDoor",
       "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
@@ -357,7 +357,7 @@
     },
     {
       "Text": "Residential Unit",
-      "ImagePath": "Markers/door_with_lock.png",
+      "ImagePath": "Markers/door_keycard_with_lock.png",
       "Position": { "x": -117.3155, "y": -439.54068, "z": 1.12753034 },
       "Category": "LockedDoor",
       "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },

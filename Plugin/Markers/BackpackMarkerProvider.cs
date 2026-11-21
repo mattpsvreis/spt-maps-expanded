@@ -71,6 +71,15 @@ namespace MapsExtended.Markers
             TryRemoveMarkers();
         }
 
+        public override void OnColorsChanged(MapView map)
+        {
+            var color = Settings.BackpackColor.Value;
+            foreach (var marker in _backpackMarkers.Values)
+            {
+                marker.Color = color;
+            }
+        }
+
         public override void OnDisable(MapView map)
         {
             LootItemInitPatch.OnRegisterLoot -= OnRegisterLoot;

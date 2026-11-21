@@ -51,6 +51,7 @@ namespace MapsExtended.Markers
 
         private readonly Dictionary<ExfiltrationPoint, MapMarker> _extractMarkers = [];
         private readonly Dictionary<MapMarker, List<ExfiltrationPoint>> _pointsByMarker = [];
+        private readonly Dictionary<ExfiltrationPoint, WorldInteractiveObjectInteract> _switchHandlers = [];
 
         public override void OnShowInRaid(MapView map)
         {
@@ -67,6 +68,7 @@ namespace MapsExtended.Markers
 
                 // subscribe to status changes while map is shown
                 extract.OnStatusChanged += UpdateExtractStatus;
+                SubscribeSwitches(extract);
             }
         }
 
@@ -76,6 +78,7 @@ namespace MapsExtended.Markers
             foreach (var extract in _extractMarkers.Keys)
             {
                 extract.OnStatusChanged -= UpdateExtractStatus;
+                UnsubscribeSwitches(extract);
             }
         }
 
@@ -94,6 +97,14 @@ namespace MapsExtended.Markers
         public override void OnDisable(MapView map)
         {
             TryRemoveMarkers();
+        }
+
+        public override void OnColorsChanged(MapView map)
+        {
+            foreach (var extract in _extractMarkers.Keys)
+            {
+                UpdateExtractStatus(extract, extract.Status);
+            }
         }
 
         private void AddExtractMarkers(MapView map)
@@ -229,6 +240,7 @@ namespace MapsExtended.Markers
             foreach (var extract in _extractMarkers.Keys)
             {
                 extract.OnStatusChanged -= UpdateExtractStatus;
+                UnsubscribeSwitches(extract);
             }
 
             ClearMarkers();
@@ -252,12 +264,6 @@ namespace MapsExtended.Markers
                 return;
             }
 
-            if (!_showExtractStatusInRaid)
-            {
-                marker.Color = Settings.ExtractDefaultColor.Value;
-                return;
-            }
-
             var best = EExfiltrationStatus.NotPresent;
             var bestRank = -1;
             foreach (var point in points)
@@ -270,6 +276,14 @@ namespace MapsExtended.Markers
 
                 bestRank = rank;
                 best = point.Status;
+            }
+
+            marker.SetDescription(DescribeCluster(points, best));
+
+            if (!_showExtractStatusInRaid)
+            {
+                marker.Color = Settings.ExtractDefaultColor.Value;
+                return;
             }
 
             switch (best)
@@ -296,6 +310,68 @@ namespace MapsExtended.Markers
                     return 1;
                 default:
                     return 2;
+            }
+        }
+
+        private static string DescribeCluster(List<ExfiltrationPoint> points, EExfiltrationStatus best)
+        {
+            foreach (var point in points)
+            {
+                if (point.Status != best)
+                {
+                    continue;
+                }
+
+                var tip = ExtractRequirementText.Describe(point);
+                if (!string.IsNullOrEmpty(tip))
+                {
+                    return tip;
+                }
+            }
+
+            return "";
+        }
+
+        // A switch chain can change the tip without changing status, such as power then the door button.
+        private void SubscribeSwitches(ExfiltrationPoint extract)
+        {
+            if (extract.Switch == null || _switchHandlers.ContainsKey(extract))
+            {
+                return;
+            }
+
+            WorldInteractiveObjectInteract handler =
+                (_, _, _) => UpdateExtractStatus(extract, extract.Status);
+            _switchHandlers[extract] = handler;
+
+            var seen = new HashSet<Switch>();
+            var current = extract.Switch;
+            while (current != null && seen.Add(current))
+            {
+                current.OnDoorStateChanged += handler;
+                current = current.PreviousSwitch;
+            }
+        }
+
+        private void UnsubscribeSwitches(ExfiltrationPoint extract)
+        {
+            if (!_switchHandlers.TryGetValue(extract, out var handler))
+            {
+                return;
+            }
+
+            _switchHandlers.Remove(extract);
+            if (extract.Switch == null)
+            {
+                return;
+            }
+
+            var seen = new HashSet<Switch>();
+            var current = extract.Switch;
+            while (current != null && seen.Add(current))
+            {
+                current.OnDoorStateChanged -= handler;
+                current = current.PreviousSwitch;
             }
         }
     }

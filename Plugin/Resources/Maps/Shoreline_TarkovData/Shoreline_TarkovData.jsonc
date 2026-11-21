@@ -553,38 +553,38 @@
       "Category": "LockedDoor",
       "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
       "AssociatedItemId": "664d3ddfdda2e85aca370d75"
+    },
+    {
+      "Text": "Health Resort management office safe",
+      "ImagePath": "Markers/safe_with_lock.png",
+      "Position": { "x": -266.10675, "y": -147.65097, "z": -0.3202896 },
+      "Category": "LockedDoor",
+      "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
+      "AssociatedItemId": "5a0f08bc86f77478f33b84c2"
+    },
+    {
+      "Text": "West Wing Room 321 Safe",
+      "ImagePath": "Markers/safe_with_lock.png",
+      "Position": { "x": -165.664047, "y": -89.05765, "z": 2.53099823 },
+      "Category": "LockedDoor",
+      "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
+      "AssociatedItemId": "5a0eff2986f7741fd654e684"
+    },
+    {
+      "Text": "Cottage Safe",
+      "ImagePath": "Markers/safe_with_lock.png",
+      "Position": { "x": 93.71925, "y": 111.979019, "z": -45.01355 },
+      "Category": "LockedDoor",
+      "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
+      "AssociatedItemId": "5a0f068686f7745b0d4ea242"
+    },
+    {
+      "Text": "Health Resort management warehouse safe",
+      "ImagePath": "Markers/safe_with_lock.png",
+      "Position": { "x": -242.451981, "y": -153.367249, "z": -0.3202896 },
+      "Category": "LockedDoor",
+      "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
+      "AssociatedItemId": "5a0f0f5886f7741c4e32a472"
     }
-    // {
-    //     "Text": "safe 1",
-    //     "ImagePath": "Markers/locked_safe.png",
-    //     "Position": { "x": -266.10675, "y": -147.65097, "z": -0.3202896 },
-    //     "Category": "Locked",
-    //     "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
-    //     "AssociatedItemId": "5a0f08bc86f77478f33b84c2"
-    // },
-    // {
-    //     "Text": "West Wing Room 321 Safe",
-    //     "ImagePath": "Markers/locked_safe.png",
-    //     "Position": { "x": -165.664047, "y": -89.05765, "z": 2.53099823 },
-    //     "Category": "Locked",
-    //     "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
-    //     "AssociatedItemId": "5a0eff2986f7741fd654e684"
-    // },
-    // {
-    //     "Text": "Cottage Safe",
-    //     "ImagePath": "Markers/locked_safe.png",
-    //     "Position": { "x": 93.71925, "y": 111.979019, "z": -45.01355 },
-    //     "Category": "Locked",
-    //     "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
-    //     "AssociatedItemId": "5a0f068686f7745b0d4ea242"
-    // },
-    // {
-    //     "Text": "safe 4",
-    //     "ImagePath": "Markers/locked_safe.png",
-    //     "Position": { "x": -242.451981, "y": -153.367249, "z": -0.3202896 },
-    //     "Category": "Locked",
-    //     "Color": { "r": 1.0, "g": 0.921568632, "b": 0.0156862754, "a": 1.0 },
-    //     "AssociatedItemId": "5a0f0f5886f7741c4e32a472"
-    // }
   ]
 }

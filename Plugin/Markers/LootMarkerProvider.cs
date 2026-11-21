@@ -110,6 +110,10 @@ public override void OnRaidEnd(MapView map)
                 {
                     TryRemoveMarker(item);
                 }
+                else
+                {
+                    _lootMarkers[item].Color = Settings.LootItemColor.Value;
+                }
             }
 
             foreach (var item in availableLoot)

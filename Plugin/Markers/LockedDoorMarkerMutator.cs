@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using MapsExtended.Config;
 using MapsExtended.Core;
 using MapsExtended.Presentation.Overlays;
 using MapsExtended.Integration;
 using MapsExtended.Presentation;
 using EFT.InventoryLogic;
-using UnityEngine;
 
 namespace MapsExtended.Markers
 {
@@ -18,9 +18,15 @@ namespace MapsExtended.Markers
         private static readonly string DoorWithLockPath = Path.Combine(Plugin.Path, "Markers/door_with_lock.png");
         private static readonly string CarKeyPath = Path.Combine(Plugin.Path, "Markers/car_key.png");
         private static readonly string CarDoorPath = Path.Combine(Plugin.Path, "Markers/car_door.png");
+        private static readonly string SafeWithKeyPath = Path.Combine(Plugin.Path, "Markers/safe_with_key.png");
+        private static readonly string SafeWithLockPath = Path.Combine(Plugin.Path, "Markers/safe_with_lock.png");
+        private static readonly string KeycardWithCardPath = Path.Combine(Plugin.Path, "Markers/door_keycard_with_keycard.png");
+        private static readonly string KeycardWithLockPath = Path.Combine(Plugin.Path, "Markers/door_keycard_with_lock.png");
 
         private readonly Dictionary<string, List<MapMarker>> _doorMarkersByKey = new(StringComparer.Ordinal);
         private readonly HashSet<MapMarker> _carDoorMarkers = [];
+        private readonly HashSet<MapMarker> _safeMarkers = [];
+        private readonly HashSet<MapMarker> _keycardMarkers = [];
         private readonly Dictionary<string, int> _keyCounts = new(StringComparer.Ordinal);
         private readonly HashSet<Item> _trackedKeys = [];
         private InventoryController _inventoryController;
@@ -42,7 +48,7 @@ namespace MapsExtended.Markers
                 if (string.IsNullOrWhiteSpace(marker.AssociatedItemId))
                     continue;
 
-                RememberCarDoor(marker);
+                RememberSpecialIcon(marker);
 
                 if (!_doorMarkersByKey.TryGetValue(marker.AssociatedItemId, out var markers))
                 {
@@ -86,7 +92,7 @@ namespace MapsExtended.Markers
                 if (string.IsNullOrWhiteSpace(marker.AssociatedItemId))
                     continue;
 
-                RememberCarDoor(marker);
+                RememberSpecialIcon(marker);
                 markers.Add(marker);
             }
 
@@ -113,10 +119,10 @@ namespace MapsExtended.Markers
 
                 ApplyDoorVisual(marker, keyInStash || keyInEquipment);
                 marker.Color = keyInEquipment
-                    ? Color.green
+                    ? Settings.LockedDoorHasKeyColor.Value
                     : keyInStash
-                        ? Color.yellow
-                        : Color.red;
+                        ? Settings.LockedDoorInStashColor.Value
+                        : Settings.LockedDoorMissingKeyColor.Value;
             }
         }
 
@@ -144,15 +150,35 @@ namespace MapsExtended.Markers
                     continue;
                 }
 
-                RememberCarDoor(marker);
+                RememberSpecialIcon(marker);
                 ApplyDoorVisual(marker, hasKey: false);
-                marker.Color = Color.yellow;
+                marker.Color = Settings.LockedDoorDefaultColor.Value;
             }
         }
 
         public override void OnRaidEnd(MapView map)
         {
             StopTracking();
+        }
+
+        public override void OnColorsChanged(MapView map)
+        {
+            if (map == null)
+            {
+                return;
+            }
+
+            if (GameUtils.IsInRaid())
+            {
+                foreach (var keyId in _doorMarkersByKey.Keys)
+                {
+                    UpdateDoors(keyId);
+                }
+
+                return;
+            }
+
+            OnShowOutOfRaid(map);
         }
 
         public override void OnHideInRaid(MapView map)
@@ -225,15 +251,27 @@ namespace MapsExtended.Markers
             foreach (var marker in _doorMarkersByKey[keyId])
             {
                 ApplyDoorVisual(marker, hasKey);
-                marker.Color = hasKey ? Color.green : Color.red;
+                marker.Color = hasKey
+                    ? Settings.LockedDoorHasKeyColor.Value
+                    : Settings.LockedDoorMissingKeyColor.Value;
             }
         }
 
-        private void RememberCarDoor(MapMarker marker)
+        private void RememberSpecialIcon(MapMarker marker)
         {
             if (IsCarDoorPath(marker.ImagePath))
             {
                 _carDoorMarkers.Add(marker);
+            }
+
+            if (IsSafePath(marker.ImagePath))
+            {
+                _safeMarkers.Add(marker);
+            }
+
+            if (IsKeycardPath(marker.ImagePath))
+            {
+                _keycardMarkers.Add(marker);
             }
         }
 
@@ -247,17 +285,49 @@ namespace MapsExtended.Markers
                 return;
             }
 
+            var isSafe = _safeMarkers.Contains(marker) || IsSafePath(marker.ImagePath);
+            if (isSafe)
+            {
+                _safeMarkers.Add(marker);
+                marker.SetImagePath(hasKey ? SafeWithKeyPath : SafeWithLockPath);
+                return;
+            }
+
+            var isKeycard = _keycardMarkers.Contains(marker) || IsKeycardPath(marker.ImagePath);
+            if (isKeycard)
+            {
+                _keycardMarkers.Add(marker);
+                marker.SetImagePath(hasKey ? KeycardWithCardPath : KeycardWithLockPath);
+                return;
+            }
+
             marker.SetImagePath(hasKey ? DoorWithKeyPath : DoorWithLockPath);
         }
 
         private static bool IsCarDoorPath(string path)
         {
-            if (string.IsNullOrEmpty(path))
-                return false;
-
-            var file = Path.GetFileNameWithoutExtension(path);
+            var file = IconFileName(path);
             return file.Equals("car_door", StringComparison.OrdinalIgnoreCase)
                    || file.Equals("car_key", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsSafePath(string path)
+        {
+            var file = IconFileName(path);
+            return file.Equals("safe_with_lock", StringComparison.OrdinalIgnoreCase)
+                   || file.Equals("safe_with_key", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static bool IsKeycardPath(string path)
+        {
+            var file = IconFileName(path);
+            return file.Equals("door_keycard_with_lock", StringComparison.OrdinalIgnoreCase)
+                   || file.Equals("door_keycard_with_keycard", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string IconFileName(string path)
+        {
+            return string.IsNullOrEmpty(path) ? "" : Path.GetFileNameWithoutExtension(path);
         }
 
         private void StopTracking()
@@ -272,6 +342,8 @@ namespace MapsExtended.Markers
             _equipment = null;
             _doorMarkersByKey.Clear();
             _carDoorMarkers.Clear();
+            _safeMarkers.Clear();
+            _keycardMarkers.Clear();
             _keyCounts.Clear();
             _trackedKeys.Clear();
         }

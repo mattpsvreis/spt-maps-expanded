@@ -123,6 +123,26 @@ namespace MapsExtended.Presentation
             {
                 AddRemove<HeliCrashMarkerProvider>(Settings.ShowHeliCrashMarker.Value);
             }
+
+            if (_mapView != null && !Settings.ShowLockedDoorStatus.Value)
+            {
+                foreach (var marker in _mapView.GetMapMarkersByCategory("LockedDoor"))
+                {
+                    marker.Color = Settings.LockedDoorDefaultColor.Value;
+                }
+            }
+
+            foreach (var provider in _providers.Values)
+            {
+                try
+                {
+                    provider.OnColorsChanged(_mapView);
+                }
+                catch (Exception e)
+                {
+                    Plugin.Log?.LogError($"Failed to recolor map markers: {e}");
+                }
+            }
         }
 
         internal void SetVisibility(bool visible, bool inRaid)

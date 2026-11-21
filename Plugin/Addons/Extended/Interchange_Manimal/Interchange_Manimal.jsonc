@@ -1185,7 +1185,7 @@
     },
     {
       "Text": "Object #11SR Saferoom",
-      "ImagePath": "Markers/door_with_lock.png",
+      "ImagePath": "Markers/door_keycard_with_lock.png",
       "Position": {
         "x": -51.9125252,
         "y": 45.8358765,
@@ -1202,7 +1202,7 @@
     },
     {
       "Text": "Object #21WS",
-      "ImagePath": "Markers/door_with_lock.png",
+      "ImagePath": "Markers/door_keycard_with_lock.png",
       "Position": {
         "x": 140.195663,
         "y": 263.315277,

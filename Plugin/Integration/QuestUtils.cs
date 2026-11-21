@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Comfort.Common;
+using MapsExtended.Config;
 using MapsExtended.Core;
 using MapsExtended.Presentation.Overlays;
 using EFT;
@@ -23,7 +24,6 @@ namespace MapsExtended.Integration
         private const string QuestCategory = "Quest";
         private const string QuestImagePath = "Markers/quest.png";
         private static readonly Vector2 QuestPivot = new Vector2(0.5f, 0f);
-        private static readonly Color QuestColor = Color.green;
         private static readonly string ZoneCachePath = Path.Combine(Plugin.Path, "Cache", "quest_zones.json");
 
         private static List<TriggerWithId> _triggersWithIds;
@@ -126,34 +126,14 @@ namespace MapsExtended.Integration
             var markers = new List<MapMarkerDef>();
 
             var conditions = GetIncompleteQuestConditions(player, quest);
+            var questName = quest.Template.NameLocaleKey.BsgLocalized();
             foreach (var condition in conditions)
             {
-                var questName = quest.Template.NameLocaleKey.BsgLocalized();
-                var conditionDescription = condition.id.BsgLocalized();
-
+                var conditionDescription = DescribeCondition(condition);
                 var positions = GetPositionsForCondition(condition, questName, conditionDescription);
                 foreach (var position in positions)
                 {
-                    var isDuplicate = false;
-
-                    // check against previously created markers for duplicate position
-                    foreach (var marker in markers)
-                    {
-                        if (MathUtils.ApproxEquals(marker.Position.x, position.x)
-                         && MathUtils.ApproxEquals(marker.Position.y, position.y)
-                         && MathUtils.ApproxEquals(marker.Position.z, position.z))
-                        {
-                            isDuplicate = true;
-                            break;
-                        }
-                    }
-
-                    if (isDuplicate)
-                    {
-                        continue;
-                    }
-
-                    markers.Add(CreateQuestMapMarkerDef(position, questName, conditionDescription));
+                    AddQuestMarker(markers, position, questName, conditionDescription);
                 }
             }
 
@@ -553,16 +533,89 @@ namespace MapsExtended.Integration
             return triggerWithIds.Where(t => t.Id == zoneId);
         }
 
+        private static void AddQuestMarker(List<MapMarkerDef> markers, Vector3 position, string questName, string description)
+        {
+            foreach (var marker in markers)
+            {
+                if (!MathUtils.ApproxEquals(marker.Position.x, position.x)
+                    || !MathUtils.ApproxEquals(marker.Position.y, position.y)
+                    || !MathUtils.ApproxEquals(marker.Position.z, position.z))
+                {
+                    continue;
+                }
+
+                AppendDescription(marker, description);
+                return;
+            }
+
+            markers.Add(CreateQuestMapMarkerDef(position, questName, description));
+        }
+
+        private static void AppendDescription(MapMarkerDef marker, string description)
+        {
+            if (string.IsNullOrEmpty(description))
+            {
+                return;
+            }
+
+            if (string.IsNullOrEmpty(marker.Description))
+            {
+                marker.Description = description;
+                return;
+            }
+
+            if (marker.Description.IndexOf(description, StringComparison.Ordinal) >= 0)
+            {
+                return;
+            }
+
+            marker.Description = marker.Description + "\n" + description;
+        }
+
+        private static string DescribeCondition(Condition condition)
+        {
+            if (condition == null)
+            {
+                return "";
+            }
+
+            string text;
+            try
+            {
+                // Same string the quest log shows, including generated elimination and location lines.
+                text = condition.FormattedDescription;
+            }
+            catch (Exception e)
+            {
+                Plugin.Log?.LogWarning($"Quest condition {condition.id} description failed: {e.Message}");
+                return "";
+            }
+
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return "";
+            }
+
+            text = text.Trim();
+            if (text == condition.id.ToString())
+            {
+                return "";
+            }
+
+            return text;
+        }
+
         private static MapMarkerDef CreateQuestMapMarkerDef(Vector3 position, string questName, string conditionDescription)
         {
             return new MapMarkerDef
             {
                 Category = QuestCategory,
-                Color = QuestColor,
+                Color = Settings.QuestColor.Value,
                 ImagePath = QuestImagePath,
                 Position = position,
                 Pivot = QuestPivot,
-                Text = questName
+                Text = questName,
+                Description = conditionDescription ?? ""
             };
         }
     }

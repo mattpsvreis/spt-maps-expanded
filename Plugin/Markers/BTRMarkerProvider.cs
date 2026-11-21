@@ -44,6 +44,14 @@ namespace MapsExtended.Markers
             TryRemoveMarker();
         }
 
+        public override void OnColorsChanged(MapView map)
+        {
+            if (_btrMarker != null)
+            {
+                _btrMarker.Color = Settings.BtrColor.Value;
+            }
+        }
+
         private void TryAddMarker(MapView map)
         {
             if (_btrMarker != null)

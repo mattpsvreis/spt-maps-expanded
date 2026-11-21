@@ -118,7 +118,7 @@
     <ItemGroup>
       <ServerComponents Include="$(ProjectDir)../Server/bin/Release/MapsExpanded/*.*" />
       <OutputDLL Include="$(ProjectDir)$(OutDir)$(TargetName).dll" />
-      <License Include="$(ProjectDir)LICENSE;$(ProjectDir)../NOTICE;$(ProjectDir)../THIRD-PARTY.md" />
+      <License Include="$(ProjectDir)LICENSE;$(ProjectDir)../NOTICE;$(ProjectDir)../THIRD-PARTY.md;$(ProjectDir)../CHANGELOG.md" />
       <Resources Include="$(ProjectDir)Resources\**\*.*" />
       <Addons Include="$(ProjectDir)Addons\**\*.*" />
       <ManagedDlls Include="$(ProjectDir)../EscapeFromTarkov_Data\**\*.*" />

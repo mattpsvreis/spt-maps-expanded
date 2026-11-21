@@ -8,7 +8,6 @@ using MapsExtended.Presentation.Overlays;
 using MapsExtended.Integration;
 using MapsExtended.Presentation;
 using EFT;
-using UnityEngine;
 
 namespace MapsExtended.Markers
 {
@@ -19,7 +18,6 @@ namespace MapsExtended.Markers
         // TODO: move to config
         private const string FriendlyCorpseCategory = "Friendly Corpse";
         private const string FriendlyCorpseImagePath = SkullImagePath;
-        private static readonly Color FriendlyCorpseColor = Color.Lerp(Color.blue, Color.white, 0.5f);
 
         private const string KilledCorpseCategory = "Killed Corpse";
         private const string KilledCorpseImagePath = SkullImagePath;
@@ -32,7 +30,6 @@ namespace MapsExtended.Markers
 
         private const string FriendlyKilledCorpseCategory = "Friendly Killed Corpse";
         private const string FriendlyKilledCorpseImagePath = SkullImagePath;
-        private static readonly Color FriendlyKilledCorpseColor = Color.Lerp(Color.Lerp(Color.blue, Color.white, 0.5f), Color.red, 0.5f);
 
         private const string FriendlyKilledBossCorpseCategory = "Friendly Killed Boss Corpse";
         private const string FriendlyKilledBossCorpseImagePath = SkullImagePath;
@@ -236,7 +233,7 @@ namespace MapsExtended.Markers
             {
                 category = FriendlyCorpseCategory;
                 imagePath = FriendlyCorpseImagePath;
-                color = FriendlyCorpseColor;
+                color = Settings.FriendlyCorpseColor.Value;
             }
             else if (player.IsTrackedBoss() && player.DidMainPlayerKill())
             {
@@ -260,7 +257,7 @@ namespace MapsExtended.Markers
             {
                 category = FriendlyKilledCorpseCategory;
                 imagePath = FriendlyKilledCorpseImagePath;
-                color = FriendlyKilledCorpseColor;
+                color = Settings.FriendlyKilledCorpseColor.Value;
             }
             else if (player.IsTrackedBoss())
             {

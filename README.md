@@ -13,11 +13,12 @@
 - Animated transitions between full map / peek / minimap
 
 ### Markers (in raid)
-- **You** — player arrow, configurable colour
+- **You** — player arrow
+- **Colours** — every marker type has its own colour under Marker Colors in F12, and changes apply while the map is open
 - **Others** — friendlies, PMCs, scavs, bosses, non-vanilla / modded bots (server config can restrict certain categories)
-- **Quests** — objective markers in raid; out of raid after you’ve visited that map once (zone cache)
-- **Extracts** — extracts, transit points, secret extracts; optional open / closed / requirements colouring
-- **Locked doors** — lock / key / car-door icons coloured by whether the key is on you, in stash, or missing
+- **Quests** — objective markers in raid; out of raid after you’ve visited that map once (zone cache). Hover a marker to read the objective
+- **Extracts** — extracts, transit points, secret extracts; optional open / closed / requirements colouring. Hover an extract that is not open yet to see what it still needs, such as a code-word note, a switch, or a payment
+- **Locked doors** — lock / key / keycard / car / safe icons coloured by whether the key is on you, in stash, or missing
 - **World** — BTR, airdrops, your dropped backpacks, wishlist items (loose or in containers), hidden stashes
 - **Corpses** — friendly, player-killed, boss, and other (each toggleable)
 - Optional marker icon packs via `Addons/*/Markers` (other modders are welcome to add their own stuff as addons!)

@@ -21,7 +21,6 @@ namespace MapsExtended.Integration.Mods
         private const string _markerCategory = "Airdrop";
         private const string _markerImagePath = "Markers/helicopter.png";
         private static Vector2 _markerPivot = new Vector2(0.5f, 0.25f);
-        private static Color _markerColor = Color.Lerp(Color.red, Color.white, 0.333f);
         //
 
         public override void OnShowInRaid(MapView map)
@@ -50,6 +49,15 @@ public override void OnRaidEnd(MapView map)
             OnRaidEnd(map);
         }
 
+        public override void OnColorsChanged(MapView map)
+        {
+            var color = Settings.HeliCrashColor.Value;
+            foreach (var marker in _HeliCrashMarkers)
+            {
+                marker.Color = color;
+            }
+        }
+
         private void TryAddMarker()
         {
             var gameWorld = Singleton<GameWorld>.Instance;
@@ -63,7 +71,7 @@ public override void OnRaidEnd(MapView map)
             var markerDef = new MapMarkerDef
             {
                 Category = _markerCategory,
-                Color = _markerColor,
+                Color = Settings.HeliCrashColor.Value,
                 ImagePath = _markerImagePath,
                 Position = MathUtils.ConvertToMapPosition(WorldData.Transform),
                 Pivot = _markerPivot,

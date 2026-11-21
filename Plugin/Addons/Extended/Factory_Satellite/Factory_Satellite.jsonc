@@ -298,7 +298,7 @@
     },
     {
       "Text": "Terraroup Storage Room",
-      "ImagePath": "Markers/door_with_lock.png",
+      "ImagePath": "Markers/door_keycard_with_lock.png",
       "Position": { "x": -20.4309616, "y": 44.06125, "z": -1.51576364 },
       "Category": "LockedDoor",
       "AssociatedItemId": "66acd6702b17692df20144c0",

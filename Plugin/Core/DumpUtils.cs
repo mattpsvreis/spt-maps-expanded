@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Comfort.Common;
@@ -33,6 +34,8 @@ namespace MapsExtended.Core
 
         private const string LockedDoorCategory = "Locked Door";
         private const string LockedDoorImagePath = "Markers/door_with_lock.png";
+        private const string LockedSafeImagePath = "Markers/safe_with_lock.png";
+        private const string LockedKeycardImagePath = "Markers/door_keycard_with_lock.png";
         private static readonly Color LockedDoorColor = Color.yellow;
 
         public static void DumpExtracts()
@@ -161,11 +164,13 @@ namespace MapsExtended.Core
                     continue;
                 }
 
+                var isSafe = locked is LootableContainer && IsSafeName(locked.name);
+                var isKeycard = !isSafe && IsKeycardKey(locked.KeyId);
                 var dumped = new MapMarkerDef
                 {
-                    Text = $"door {i++}",
+                    Text = isSafe ? locked.name : $"door {i++}",
                     Category = LockedDoorCategory,
-                    ImagePath = LockedDoorImagePath,
+                    ImagePath = isSafe ? LockedSafeImagePath : isKeycard ? LockedKeycardImagePath : LockedDoorImagePath,
                     Position = MathUtils.ConvertToMapPosition(locked.transform),
                     AssociatedItemId = locked.KeyId,
                     Color = LockedDoorColor
@@ -179,6 +184,23 @@ namespace MapsExtended.Core
             File.WriteAllText(Path.Combine(Plugin.Path, $"{mapName}-locked.json"), dumpString);
 
             Plugin.Log.LogInfo("Dumped locks");
+        }
+
+        private static bool IsSafeName(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                return false;
+            }
+
+            return name.IndexOf("safe", StringComparison.OrdinalIgnoreCase) >= 0
+                   && name.IndexOf("cash", StringComparison.OrdinalIgnoreCase) < 0;
+        }
+
+        private static bool IsKeycardKey(string keyId)
+        {
+            var name = (keyId + " Name").BsgLocalized();
+            return name.IndexOf("keycard", StringComparison.OrdinalIgnoreCase) >= 0;
         }
     }
 }
